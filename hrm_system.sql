@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Máy chủ: 127.0.0.1
--- Thời gian đã tạo: Th12 01, 2025 lúc 05:37 AM
+-- Thời gian đã tạo: Th12 01, 2025 lúc 03:34 PM
 -- Phiên bản máy phục vụ: 10.4.32-MariaDB
 -- Phiên bản PHP: 8.1.25
 
@@ -101,11 +101,11 @@ CREATE TABLE `departments` (
 --
 
 INSERT INTO `departments` (`id`, `name`, `description`, `image`, `created_at`) VALUES
-(1, 'Phòng Marketing', 'Quảng bá thương hiệu và Tuyển sinh Online', 'img/Strategy.jpg', '2025-12-01 04:33:16'),
-(2, 'Hành chính - Kế toán', 'Quản lý tài chính và Cơ sở vật chất', 'img/Finance.jpg', '2025-12-01 04:33:16'),
-(3, 'Phòng Đào Tạo', 'Quản lý Giáo viên và Học viên', 'img/vision1.jpg', '2025-12-01 04:33:16'),
-(4, 'Phòng Tuyển Sinh', 'Tư vấn khóa học', 'img/Operations.jpg', '2025-12-01 04:33:16'),
-(5, 'Phòng Nhân Sự', 'Tuyển dụng và C&B', 'img/HR.jpg', '2025-12-01 04:33:16');
+(1, 'Phòng Marketing', 'Quảng bá thương hiệu & Truyền thông.', 'img/Strategy.jpg', '2025-12-01 14:21:18'),
+(2, 'Hành chính - Kế toán', 'Quản lý tài chính, thu chi & CSVC.', 'img/Finance.jpg', '2025-12-01 14:21:18'),
+(3, 'Phòng Đào Tạo', 'Quản lý chất lượng dạy & học (Giáo viên).', 'img/vision1.jpg', '2025-12-01 14:21:18'),
+(4, 'Phòng Tuyển Sinh', 'Tư vấn bán hàng & CSKH.', 'img/Operations.jpg', '2025-12-01 14:21:18'),
+(5, 'Phòng Nhân Sự', 'Tuyển dụng, C&B, Đào tạo nội bộ.', 'img/HR.jpg', '2025-12-01 14:21:18');
 
 -- --------------------------------------------------------
 
@@ -321,7 +321,7 @@ CREATE TABLE `news` (
 --
 
 INSERT INTO `news` (`id`, `title`, `summary`, `content`, `image`, `created_at`) VALUES
-(1, 'Thông báo tuyển sinh', 'Chào mừng khóa mới.', NULL, 'img/default.jpg', '2025-12-01');
+(2, 'Thông báo tuyển sinh', 'Chào mừng khóa học mới', NULL, 'img/[520x270-cr]thongbao.png', '2025-12-01');
 
 -- --------------------------------------------------------
 
@@ -558,6 +558,7 @@ CREATE TABLE `teaching_profile` (
 CREATE TABLE `users` (
   `id` int(11) NOT NULL,
   `role_id` int(11) NOT NULL,
+  `department_id` int(11) DEFAULT NULL,
   `username` varchar(50) NOT NULL,
   `password` varchar(255) NOT NULL,
   `email` varchar(100) NOT NULL,
@@ -571,14 +572,14 @@ CREATE TABLE `users` (
 -- Đang đổ dữ liệu cho bảng `users`
 --
 
-INSERT INTO `users` (`id`, `role_id`, `username`, `password`, `email`, `full_name`, `avatar`, `status`, `created_at`) VALUES
-(1, 1, 'admin', '$2y$10$1tzcfBb3Y1Z3dUIdd4eE2esR25Z4ARIVv2zLvJ8VMZOGnHEc4tENi', 'admin@center.com', 'Super Admin', 'img/default.jpg', 'active', '2025-12-01 04:33:16'),
-(2, 2, 'tp_daotao', '$2y$10$1tzcfBb3Y1Z3dUIdd4eE2esR25Z4ARIVv2zLvJ8VMZOGnHEc4tENi', 'manager@center.com', 'Trần Đào Tạo', 'img/default.jpg', 'active', '2025-12-01 04:33:16'),
-(3, 3, 'ketoan', '$2y$10$1tzcfBb3Y1Z3dUIdd4eE2esR25Z4ARIVv2zLvJ8VMZOGnHEc4tENi', 'acc@center.com', 'Lê Kế Toán', 'img/default.jpg', 'active', '2025-12-01 04:33:16'),
-(4, 4, 'teacher_native', '$2y$10$1tzcfBb3Y1Z3dUIdd4eE2esR25Z4ARIVv2zLvJ8VMZOGnHEc4tENi', 'teacher1@center.com', 'Mr. David Beck', 'img/default.jpg', 'active', '2025-12-01 04:33:16'),
-(5, 4, 'teacher_vn', '$2y$10$1tzcfBb3Y1Z3dUIdd4eE2esR25Z4ARIVv2zLvJ8VMZOGnHEc4tENi', 'teacher2@center.com', 'Cô Mai Anh', 'img/default.jpg', 'active', '2025-12-01 04:33:16'),
-(6, 5, 'sale_staff', '$2y$10$1tzcfBb3Y1Z3dUIdd4eE2esR25Z4ARIVv2zLvJ8VMZOGnHEc4tENi', 'sale@center.com', 'Nguyễn Văn Sale', 'img/default.jpg', 'active', '2025-12-01 04:33:16'),
-(7, 6, 'mkt_staff', '$2y$10$1tzcfBb3Y1Z3dUIdd4eE2esR25Z4ARIVv2zLvJ8VMZOGnHEc4tENi', 'mkt@center.com', 'Phạm Marketing', 'img/default.jpg', 'active', '2025-12-01 04:33:16');
+INSERT INTO `users` (`id`, `role_id`, `department_id`, `username`, `password`, `email`, `full_name`, `avatar`, `status`, `created_at`) VALUES
+(1, 1, NULL, 'admin', '$2y$10$1tzcfBb3Y1Z3dUIdd4eE2esR25Z4ARIVv2zLvJ8VMZOGnHEc4tENi', 'admin@center.com', 'Super Admin', 'img/default.jpg', 'active', '2025-12-01 04:33:16'),
+(2, 2, NULL, 'tp_daotao', '$2y$10$1tzcfBb3Y1Z3dUIdd4eE2esR25Z4ARIVv2zLvJ8VMZOGnHEc4tENi', 'manager@center.com', 'Trần Đào Tạo', 'img/default.jpg', 'active', '2025-12-01 04:33:16'),
+(3, 3, NULL, 'ketoan', '$2y$10$1tzcfBb3Y1Z3dUIdd4eE2esR25Z4ARIVv2zLvJ8VMZOGnHEc4tENi', 'acc@center.com', 'Lê Kế Toán', 'img/default.jpg', 'active', '2025-12-01 04:33:16'),
+(4, 4, NULL, 'teacher_native', '$2y$10$1tzcfBb3Y1Z3dUIdd4eE2esR25Z4ARIVv2zLvJ8VMZOGnHEc4tENi', 'teacher1@center.com', 'Mr. David Beck', 'img/default.jpg', 'active', '2025-12-01 04:33:16'),
+(5, 4, NULL, 'teacher_vn', '$2y$10$1tzcfBb3Y1Z3dUIdd4eE2esR25Z4ARIVv2zLvJ8VMZOGnHEc4tENi', 'teacher2@center.com', 'Cô Mai Anh', 'img/default.jpg', 'active', '2025-12-01 04:33:16'),
+(6, 5, NULL, 'sale_staff', '$2y$10$1tzcfBb3Y1Z3dUIdd4eE2esR25Z4ARIVv2zLvJ8VMZOGnHEc4tENi', 'sale@center.com', 'Nguyễn Văn Sale', 'img/default.jpg', 'active', '2025-12-01 04:33:16'),
+(7, 6, NULL, 'mkt_staff', '$2y$10$1tzcfBb3Y1Z3dUIdd4eE2esR25Z4ARIVv2zLvJ8VMZOGnHEc4tENi', 'mkt@center.com', 'Phạm Marketing', 'img/default.jpg', 'active', '2025-12-01 04:33:16');
 
 --
 -- Chỉ mục cho các bảng đã đổ
@@ -732,7 +733,8 @@ ALTER TABLE `users`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `username` (`username`),
   ADD UNIQUE KEY `email` (`email`),
-  ADD KEY `role_id` (`role_id`);
+  ADD KEY `role_id` (`role_id`),
+  ADD KEY `fk_user_dept` (`department_id`);
 
 --
 -- AUTO_INCREMENT cho các bảng đã đổ
@@ -802,7 +804,7 @@ ALTER TABLE `legal_documents`
 -- AUTO_INCREMENT cho bảng `news`
 --
 ALTER TABLE `news`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT cho bảng `notifications`
@@ -945,6 +947,7 @@ ALTER TABLE `teaching_profile`
 -- Các ràng buộc cho bảng `users`
 --
 ALTER TABLE `users`
+  ADD CONSTRAINT `fk_user_dept` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `users_ibfk_1` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`);
 COMMIT;
 

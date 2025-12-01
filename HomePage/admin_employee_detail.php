@@ -14,6 +14,7 @@ $msg = "";
 // --- XỬ LÝ 1: CẬP NHẬT TÀI KHOẢN & VAI TRÒ (User Account) ---
 if (isset($_POST['update_account'])) {
     $role_id = $_POST['role_id'];
+    $dept_id = $_POST['department_id']; // MỚI
     $status = $_POST['status'];
     $full_name = trim($_POST['full_name']);
     $email = trim($_POST['email']);
@@ -23,9 +24,9 @@ if (isset($_POST['update_account'])) {
         $msg = "<div class='alert alert-danger'>Không thể thay đổi quyền của Super Admin!</div>";
     } else {
         // Cập nhật bảng users
-        $sql = "UPDATE users SET role_id=?, status=?, full_name=?, email=? WHERE id=?";
+        $sql = "UPDATE users SET role_id=?, department_id=?, status=?, full_name=?, email=? WHERE id=?";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("isssi", $role_id, $status, $full_name, $email, $user_id);
+        $stmt->bind_param("iisssi", $role_id, $dept_id, $status, $full_name, $email, $user_id);
         
         if ($stmt->execute()) {
             $msg = "<div class='alert alert-success'>Đã cập nhật Tài khoản & Phân quyền!</div>";
@@ -259,6 +260,22 @@ $roles_list = $conn->query("SELECT * FROM roles");
                                         ?>
                                             <option value="<?php echo $r['id']; ?>" <?php echo $selected; ?>>
                                                 <?php echo $r['name']; ?>
+                                            </option>
+                                        <?php endwhile; ?>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold small">Phòng ban</label>
+                                    <select name="department_id" class="form-select border-primary">
+                                        <option value="">-- Chưa phân phòng --</option>
+                                        <?php 
+                                        // Lấy danh sách phòng ban
+                                        $depts_list = $conn->query("SELECT * FROM departments");
+                                        while($d = $depts_list->fetch_assoc()): 
+                                            $sel = ($user['department_id'] == $d['id']) ? 'selected' : '';
+                                        ?>
+                                            <option value="<?php echo $d['id']; ?>" <?php echo $sel; ?>>
+                                                <?php echo $d['name']; ?>
                                             </option>
                                         <?php endwhile; ?>
                                     </select>
