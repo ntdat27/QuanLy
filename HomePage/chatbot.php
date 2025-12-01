@@ -9,7 +9,7 @@ header('Content-Type: application/json; charset=utf-8');
 require_once 'db_connect.php';
 
 // 2. CẤU HÌNH API KEY
-$apiKey = "AIzaSyCVGNmm4HnHBk-DdgrL78iQLyGKCoiLsTU"; 
+$apiKey = "AIzaSyBtbgBVud3imn6gpqXMb-9Mphq4jV88i2w"; 
 
 // Nhận dữ liệu từ khách
 $inputJSON = file_get_contents('php://input');
