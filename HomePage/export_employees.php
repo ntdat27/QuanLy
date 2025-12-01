@@ -8,6 +8,8 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role_id'] != 1 && $_SESSION['rol
 }
 
 $search = $_GET['search'] ?? ''; 
+$dept_filter = $_GET['dept'] ?? ''; // Nhận bộ lọc phòng ban
+
 $filename = "Danh_sach_Nhan_su_Full_" . date('Y-m-d') . ".xls";
 
 // Cấu hình Header để tải file Excel
@@ -23,7 +25,8 @@ echo '<head><meta charset="utf-8"></head>';
 echo '<body>';
 
 echo '<h2 style="text-align:center">HỒ SƠ NHÂN SỰ CHI TIẾT</h2>';
-if($search) echo '<p style="text-align:center">Từ khóa tìm kiếm: "'.htmlspecialchars($search).'"</p>';
+if($search) echo '<p style="text-align:center">Từ khóa: "'.htmlspecialchars($search).'"</p>';
+if($dept_filter) echo '<p style="text-align:center">Lọc theo mã phòng ban: '.$dept_filter.'</p>';
 
 echo '<table border="1" style="border-collapse: collapse; font-family: Arial, sans-serif; font-size: 12px;">';
 echo '<thead>
@@ -31,6 +34,7 @@ echo '<thead>
             <th>ID</th>
             <th>Họ và tên</th>
             <th>Email</th>
+            <th>Phòng ban</th>
             <th>Vai trò</th>
             <th>Trạng thái</th>
             
@@ -63,21 +67,30 @@ echo '<thead>
 echo '<tbody>';
 
 // --- TRUY VẤN DỮ LIỆU TỔNG HỢP ---
-$sql = "SELECT u.id, u.username, u.full_name, u.email, u.status, r.name as role_name, 
+$sql = "SELECT u.id, u.username, u.full_name, u.email, u.status, 
+               r.name as role_name, 
+               d.name as dept_name,
                ed.*, 
                tp.main_subject,
                ins.social_status, ins.social_book_number,
                lc.contract_type as active_contract_type, lc.base_salary as contract_salary, lc.bank_number, lc.tax_code
         FROM users u 
         LEFT JOIN roles r ON u.role_id = r.id 
+        LEFT JOIN departments d ON u.department_id = d.id 
         LEFT JOIN employee_details ed ON u.id = ed.user_id 
         LEFT JOIN teaching_profile tp ON u.id = tp.user_id
         LEFT JOIN insurance ins ON u.id = ins.user_id
         LEFT JOIN labor_contracts lc ON u.id = lc.user_id AND lc.is_active = 1 
         WHERE u.role_id != 1"; 
 
+// Điều kiện lọc tìm kiếm
 if (!empty($search)) {
     $sql .= " AND (u.full_name LIKE '%$search%' OR u.email LIKE '%$search%')";
+}
+
+// Điều kiện lọc phòng ban (Mới thêm)
+if (!empty($dept_filter)) {
+    $sql .= " AND u.department_id = " . intval($dept_filter);
 }
 
 $sql .= " ORDER BY u.id DESC";
@@ -99,6 +112,7 @@ if ($result) {
         $ec_info = $ec ? ($ec['name'] . ' (' . $ec['relationship'] . ') - ' . $ec['phone']) : '-';
 
         $status_text = ($row['status'] == 'active') ? 'Hoạt động' : 'Đã nghỉ';
+        $dept_text = !empty($row['dept_name']) ? $row['dept_name'] : 'Chưa phân phòng';
         
         // Xử lý định dạng ngày tháng và số
         $dob = !empty($row['dob']) ? date('d/m/Y', strtotime($row['dob'])) : '-';
@@ -112,6 +126,7 @@ if ($result) {
         echo '<td style="text-align: center;">' . $row['id'] . '</td>';
         echo '<td><strong>' . $row['full_name'] . '</strong></td>';
         echo '<td>' . $row['email'] . '</td>';
+        echo '<td style="text-align: center; color: #003366;">' . $dept_text . '</td>';
         echo '<td style="text-align: center;">' . $row['role_name'] . '</td>';
         echo '<td style="text-align: center;">' . $status_text . '</td>';
         

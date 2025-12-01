@@ -25,18 +25,12 @@ if (isset($_POST['assign_user'])) {
     }
 }
 
-// --- XỬ LÝ: XÓA NHÂN VIÊN KHỎI PHÒNG ---
-if (isset($_POST['remove_user'])) {
-    $user_id = $_POST['user_id'];
-    $conn->query("UPDATE users SET department_id = NULL WHERE id = $user_id");
-    $message = "<div class='alert alert-warning'>Đã đưa nhân sự ra khỏi phòng ban.</div>";
-}
-
-// Lấy danh sách 5 phòng ban cố định
+// Lấy danh sách phòng ban
 $depts = $conn->query("SELECT * FROM departments ORDER BY id ASC");
 
-// Lấy danh sách tất cả nhân viên (để nạp vào dropdown chọn người)
-$all_users = $conn->query("SELECT id, full_name, username FROM users WHERE status='active' ORDER BY full_name ASC");
+// Lấy danh sách tất cả nhân viên (để nạp vào dropdown chọn người trong modal)
+// CẬP NHẬT: Lấy thêm cột department_id để so sánh
+$all_users = $conn->query("SELECT id, full_name, username, department_id FROM users WHERE status='active' ORDER BY full_name ASC");
 $users_list = [];
 while($u = $all_users->fetch_assoc()) { $users_list[] = $u; }
 ?>
@@ -51,7 +45,6 @@ while($u = $all_users->fetch_assoc()) { $users_list[] = $u; }
     <style>
         .dept-card-header { height: 100px; background-size: cover; background-position: center; position: relative; }
         .dept-overlay { background: rgba(0,0,0,0.6); position: absolute; top:0; left:0; right:0; bottom:0; display: flex; align-items: center; justify-content: center; }
-        .avatar-small { width: 30px; height: 30px; object-fit: cover; border-radius: 50%; margin-right: 5px; }
     </style>
 </head>
 <body class="bg-light">
@@ -65,10 +58,10 @@ while($u = $all_users->fetch_assoc()) { $users_list[] = $u; }
 
         <div class="row g-4">
             <?php while($dept = $depts->fetch_assoc()): 
-                // Lấy danh sách nhân viên thuộc phòng này
+                // Đếm số lượng nhân viên
                 $d_id = $dept['id'];
-                $members = $conn->query("SELECT * FROM users WHERE department_id = $d_id");
-                $count = $members->num_rows;
+                $count_sql = $conn->query("SELECT COUNT(*) as total FROM users WHERE department_id = $d_id");
+                $count = $count_sql->fetch_assoc()['total'];
             ?>
             <div class="col-md-6 col-lg-4">
                 <div class="card h-100 shadow-sm border-0">
@@ -81,33 +74,15 @@ while($u = $all_users->fetch_assoc()) { $users_list[] = $u; }
                     <div class="card-body">
                         <p class="text-muted small mb-3"><?php echo $dept['description']; ?></p>
                         
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h6 class="fw-bold text-primary m-0"><i class="fas fa-users"></i> Thành viên (<?php echo $count; ?>)</h6>
-                            <button class="btn btn-sm btn-outline-primary rounded-circle" data-bs-toggle="modal" data-bs-target="#addMemberModal<?php echo $d_id; ?>" title="Thêm người">
-                                <i class="fas fa-plus"></i>
-                            </button>
+                        <div class="d-flex justify-content-between align-items-center mb-2 p-3 bg-light rounded">
+                            <h6 class="fw-bold text-primary m-0"><i class="fas fa-users"></i> Tổng nhân sự:</h6>
+                            <span class="badge bg-primary fs-6"><?php echo $count; ?></span>
                         </div>
-
-                        <div class="list-group list-group-flush border rounded" style="max-height: 200px; overflow-y: auto;">
-                            <?php if ($count > 0): ?>
-                                <?php while($mem = $members->fetch_assoc()): ?>
-                                <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-1">
-                                    <div class="d-flex align-items-center">
-                                        <img src="<?php echo $mem['avatar']; ?>" class="avatar-small">
-                                        <div class="small lh-1">
-                                            <strong><?php echo $mem['full_name']; ?></strong><br>
-                                            <span class="text-muted" style="font-size: 10px;"><?php echo $mem['username']; ?></span>
-                                        </div>
-                                    </div>
-                                    <form method="POST" onsubmit="return confirm('Xóa nhân viên này khỏi phòng?');">
-                                        <input type="hidden" name="user_id" value="<?php echo $mem['id']; ?>">
-                                        <button type="submit" name="remove_user" class="btn btn-link text-danger p-0" style="font-size: 0.8rem;"><i class="fas fa-times"></i></button>
-                                    </form>
-                                </div>
-                                <?php endwhile; ?>
-                            <?php else: ?>
-                                <div class="text-center py-3 text-muted small">Chưa có nhân sự</div>
-                            <?php endif; ?>
+                        
+                        <div class="d-grid mt-3">
+                             <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addMemberModal<?php echo $d_id; ?>">
+                                <i class="fas fa-user-plus"></i> Thêm nhân sự
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -124,12 +99,22 @@ while($u = $all_users->fetch_assoc()) { $users_list[] = $u; }
                             <div class="modal-body">
                                 <input type="hidden" name="dept_id" value="<?php echo $d_id; ?>">
                                 <label class="form-label">Chọn nhân viên:</label>
-                                <select name="user_id" class="form-select" required size="5">
-                                    <?php foreach($users_list as $u): ?>
-                                        <option value="<?php echo $u['id']; ?>"><?php echo $u['full_name']; ?> (<?php echo $u['username']; ?>)</option>
+                                <select name="user_id" class="form-select" required size="8">
+                                    <?php foreach($users_list as $u): 
+                                        // Kiểm tra nếu user đang ở phòng ban hiện tại
+                                        $is_in_current_dept = ($u['department_id'] == $d_id);
+                                        
+                                        // Style bôi đậm và nền xám cho người đã ở trong phòng
+                                        $style = $is_in_current_dept ? 'font-weight: bold; background-color: #e9ecef; color: #000;' : '';
+                                        $note = $is_in_current_dept ? ' (Đang ở phòng này)' : '';
+                                        $disabled = $is_in_current_dept ? 'disabled' : '';
+                                    ?>
+                                        <option value="<?php echo $u['id']; ?>" style="<?php echo $style; ?>" <?php echo $disabled; ?>>
+                                            <?php echo $u['full_name']; ?> (<?php echo $u['username']; ?>)<?php echo $note; ?>
+                                        </option>
                                     <?php endforeach; ?>
                                 </select>
-                                <div class="form-text text-warning"><i class="fas fa-exclamation-triangle"></i> Nếu nhân viên đã ở phòng khác, họ sẽ được chuyển sang phòng này.</div>
+                                <div class="form-text text-warning"><i class="fas fa-exclamation-triangle"></i> Những người được bôi đậm là thành viên hiện tại của phòng.</div>
                             </div>
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>

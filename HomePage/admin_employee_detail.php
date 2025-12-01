@@ -14,7 +14,7 @@ $msg = "";
 // --- XỬ LÝ 1: CẬP NHẬT TÀI KHOẢN & VAI TRÒ (User Account) ---
 if (isset($_POST['update_account'])) {
     $role_id = $_POST['role_id'];
-    $dept_id = $_POST['department_id']; // MỚI
+    // Đã xóa department_id khỏi đây theo yêu cầu
     $status = $_POST['status'];
     $full_name = trim($_POST['full_name']);
     $email = trim($_POST['email']);
@@ -23,10 +23,11 @@ if (isset($_POST['update_account'])) {
     if ($user_id == 1 && $role_id != 1) {
         $msg = "<div class='alert alert-danger'>Không thể thay đổi quyền của Super Admin!</div>";
     } else {
-        // Cập nhật bảng users
-        $sql = "UPDATE users SET role_id=?, department_id=?, status=?, full_name=?, email=? WHERE id=?";
+        // Cập nhật bảng users (Bỏ cập nhật department_id)
+        $sql = "UPDATE users SET role_id=?, status=?, full_name=?, email=? WHERE id=?";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("iisssi", $role_id, $dept_id, $status, $full_name, $email, $user_id);
+        // Sửa bind_param: xóa 1 chữ 'i' và biến $dept_id
+        $stmt->bind_param("isssi", $role_id, $status, $full_name, $email, $user_id);
         
         if ($stmt->execute()) {
             $msg = "<div class='alert alert-success'>Đã cập nhật Tài khoản & Phân quyền!</div>";
@@ -36,7 +37,7 @@ if (isset($_POST['update_account'])) {
     }
 }
 
-// --- XỬ LÝ 2: CÁC TAB HỒ SƠ CHI TIẾT ---
+// --- XỬ LÝ 2: CÁC TAB HỒ SƠ CHI TIẾT (GIỮ NGUYÊN) ---
 
 // Tab 1: Cá nhân & Lý lịch
 if (isset($_POST['save_tab1'])) {
@@ -183,7 +184,12 @@ if (isset($_POST['add_contact'])) {
 }
 
 // --- LẤY DỮ LIỆU HIỂN THỊ ---
-$sql_u = "SELECT u.*, r.name as role_name FROM users u LEFT JOIN roles r ON u.role_id = r.id WHERE u.id = $user_id";
+// Thêm lấy tên phòng ban để hiển thị (readonly)
+$sql_u = "SELECT u.*, r.name as role_name, d.name as dept_name 
+          FROM users u 
+          LEFT JOIN roles r ON u.role_id = r.id 
+          LEFT JOIN departments d ON u.department_id = d.id
+          WHERE u.id = $user_id";
 $user = $conn->query($sql_u)->fetch_assoc();
 
 if (!$user) die("Không tìm thấy nhân viên!");
@@ -228,6 +234,7 @@ $roles_list = $conn->query("SELECT * FROM roles");
                         <small class="text-muted"><?php echo $user['email']; ?></small>
                         <div class="mt-2">
                             <span class="badge bg-primary"><?php echo $user['role_name']; ?></span>
+                            <span class="badge bg-info text-dark"><?php echo $user['dept_name'] ?? 'Chưa phân phòng'; ?></span>
                             <span class="badge <?php echo ($user['status']=='active')?'bg-success':'bg-danger'; ?>">
                                 <?php echo ucfirst($user['status']); ?>
                             </span>
@@ -260,22 +267,6 @@ $roles_list = $conn->query("SELECT * FROM roles");
                                         ?>
                                             <option value="<?php echo $r['id']; ?>" <?php echo $selected; ?>>
                                                 <?php echo $r['name']; ?>
-                                            </option>
-                                        <?php endwhile; ?>
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold small">Phòng ban</label>
-                                    <select name="department_id" class="form-select border-primary">
-                                        <option value="">-- Chưa phân phòng --</option>
-                                        <?php 
-                                        // Lấy danh sách phòng ban
-                                        $depts_list = $conn->query("SELECT * FROM departments");
-                                        while($d = $depts_list->fetch_assoc()): 
-                                            $sel = ($user['department_id'] == $d['id']) ? 'selected' : '';
-                                        ?>
-                                            <option value="<?php echo $d['id']; ?>" <?php echo $sel; ?>>
-                                                <?php echo $d['name']; ?>
                                             </option>
                                         <?php endwhile; ?>
                                     </select>

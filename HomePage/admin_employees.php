@@ -7,9 +7,9 @@ if (!isset($_SESSION['user_id']) || (!hasPermission('user.view') && $_SESSION['r
     header("Location: index.php");
     exit();
 }
-// ... phần còn lại giữ nguyên ...
 
 $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
+$dept_filter = isset($_GET['dept']) ? $_GET['dept'] : '';
 
 // Xử lý Xóa
 if (isset($_GET['delete_id'])) {
@@ -23,30 +23,43 @@ if (isset($_GET['delete_id'])) {
     }
 }
 
-// --- TRUY VẤN CÓ TÌM KIẾM ---
-$sql = "SELECT u.*, r.name as role_name, ed.phone, ed.education_level 
+// Lấy danh sách phòng ban cho Dropdown
+$all_depts = $conn->query("SELECT * FROM departments ORDER BY name ASC");
+
+// --- TRUY VẤN DỮ LIỆU ---
+// Thêm LEFT JOIN departments để lấy tên phòng
+$sql = "SELECT u.*, r.name as role_name, d.name as dept_name, ed.phone, ed.education_level 
         FROM users u 
         LEFT JOIN roles r ON u.role_id = r.id 
+        LEFT JOIN departments d ON u.department_id = d.id 
         LEFT JOIN employee_details ed ON u.id = ed.user_id 
         WHERE u.id != ?"; // Luôn trừ bản thân người đang login
 
-// Thêm điều kiện tìm kiếm
+// Chuẩn bị tham số cho bind_param
+$types = "i";
+$params = [$_SESSION['user_id']];
+
+// Điều kiện Tìm kiếm từ khóa
 if (!empty($search_query)) {
     $sql .= " AND (u.full_name LIKE ? OR u.email LIKE ? OR u.username LIKE ?)";
+    $types .= "sss";
+    $search_term = "%$search_query%";
+    $params[] = $search_term;
+    $params[] = $search_term;
+    $params[] = $search_term;
+}
+
+// Điều kiện Lọc phòng ban
+if (!empty($dept_filter)) {
+    $sql .= " AND u.department_id = ?";
+    $types .= "i";
+    $params[] = $dept_filter;
 }
 
 $sql .= " ORDER BY u.id DESC";
 
 $stmt = $conn->prepare($sql);
-
-// Bind tham số linh hoạt
-if (!empty($search_query)) {
-    $param = "%$search_query%";
-    $stmt->bind_param("isss", $_SESSION['user_id'], $param, $param, $param);
-} else {
-    $stmt->bind_param("i", $_SESSION['user_id']);
-}
-
+$stmt->bind_param($types, ...$params); // PHP 8.1+ hỗ trợ spread operator
 $stmt->execute();
 $result = $stmt->get_result();
 ?>
@@ -76,17 +89,28 @@ $result = $stmt->get_result();
             <div class="card-body py-3">
                 <form method="GET" class="row g-3 align-items-center">
                     <div class="col-auto">
+                        <select name="dept" class="form-select" onchange="this.form.submit()">
+                            <option value="">-- Tất cả phòng ban --</option>
+                            <?php while($d = $all_depts->fetch_assoc()): ?>
+                                <option value="<?php echo $d['id']; ?>" <?php echo ($dept_filter == $d['id']) ? 'selected' : ''; ?>>
+                                    <?php echo $d['name']; ?>
+                                </option>
+                            <?php endwhile; ?>
+                        </select>
+                    </div>
+
+                    <div class="col-auto">
                         <div class="input-group">
                             <input type="text" name="search" class="form-control" placeholder="Tìm tên, email..." value="<?php echo htmlspecialchars($search_query); ?>" style="width: 250px;">
-                            <button class="btn btn-primary" type="submit"><i class="fas fa-search"></i> Tìm kiếm</button>
-                            <?php if(!empty($search_query)): ?>
-                                <a href="admin_employees.php" class="btn btn-outline-secondary" title="Xóa tìm kiếm"><i class="fas fa-times"></i></a>
+                            <button class="btn btn-primary" type="submit"><i class="fas fa-search"></i> Tìm</button>
+                            <?php if(!empty($search_query) || !empty($dept_filter)): ?>
+                                <a href="admin_employees.php" class="btn btn-outline-secondary" title="Xóa bộ lọc"><i class="fas fa-times"></i></a>
                             <?php endif; ?>
                         </div>
                     </div>
                     
                     <div class="col-auto ms-auto">
-                        <a href="export_employees.php?search=<?php echo urlencode($search_query); ?>" class="btn btn-success fw-bold">
+                        <a href="export_employees.php?search=<?php echo urlencode($search_query); ?>&dept=<?php echo urlencode($dept_filter); ?>" class="btn btn-success fw-bold">
                             <i class="fas fa-file-excel"></i> Xuất danh sách
                         </a>
                     </div>
@@ -100,7 +124,7 @@ $result = $stmt->get_result();
                     <thead class="table-dark">
                         <tr>
                             <th>Họ tên & Email</th>
-                            <th>Vai trò</th>
+                            <th>Phòng ban</th> <th>Vai trò</th>
                             <th>Trình độ</th>
                             <th>Liên hệ</th>
                             <th>Trạng thái</th>
@@ -122,6 +146,13 @@ $result = $stmt->get_result();
                                         </div>
                                     </div>
                                 </td>
+                                <td>
+                                    <?php if($row['dept_name']): ?>
+                                        <span class="badge bg-light text-dark border"><?php echo $row['dept_name']; ?></span>
+                                    <?php else: ?>
+                                        <span class="text-muted small">Chưa phân phòng</span>
+                                    <?php endif; ?>
+                                </td>
                                 <td><span class="badge bg-info text-dark"><?php echo $row['role_name']; ?></span></td>
                                 <td><?php echo $row['education_level'] ?? '-'; ?></td>
                                 <td><?php echo $row['phone'] ?? '-'; ?></td>
@@ -140,7 +171,7 @@ $result = $stmt->get_result();
                             <?php endwhile; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="6" class="text-center py-4 text-muted">
+                                <td colspan="7" class="text-center py-4 text-muted">
                                     <i class="fas fa-search me-1"></i> Không tìm thấy nhân viên nào phù hợp.
                                 </td>
                             </tr>
