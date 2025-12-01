@@ -194,16 +194,34 @@ while($r = $res_pending->fetch_assoc()) $pending_reqs[] = $r['type'];
                                         <div class="col-12 border-bottom pb-2 text-primary fw-bold">Thông tin cơ bản</div>
                                         <div class="col-md-6"><label>Họ tên</label><input type="text" name="full_name" class="form-control" value="<?php echo $user['full_name']; ?>" required></div>
                                         <div class="col-md-6"><label>Email</label><input type="email" name="email" class="form-control" value="<?php echo $user['email']; ?>" required></div>
+                                        
                                         <div class="col-md-6"><label>SĐT</label><input type="text" name="phone" class="form-control" value="<?php echo $detail['phone'] ?? ''; ?>"></div>
+                                        <div class="col-md-6"><label>Zalo</label><input type="text" name="zalo" class="form-control" value="<?php echo $detail['zalo'] ?? ''; ?>"></div>
+
                                         <div class="col-md-6"><label>Ngày sinh</label><input type="date" name="dob" class="form-control" value="<?php echo $detail['dob'] ?? ''; ?>"></div>
+                                        
                                         <div class="col-md-6"><label>Giới tính</label>
                                             <select name="gender" class="form-select">
                                                 <option value="Nam" <?php echo ($detail['gender']??'')=='Nam'?'selected':''; ?>>Nam</option>
                                                 <option value="Nữ" <?php echo ($detail['gender']??'')=='Nữ'?'selected':''; ?>>Nữ</option>
                                             </select>
                                         </div>
+
+                                        <div class="col-md-6"><label>Tình trạng hôn nhân</label>
+                                            <select name="marital_status" class="form-select">
+                                                <option value="Độc thân" <?php echo ($detail['marital_status']??'')=='Độc thân'?'selected':''; ?>>Độc thân</option>
+                                                <option value="Đã kết hôn" <?php echo ($detail['marital_status']??'')=='Đã kết hôn'?'selected':''; ?>>Đã kết hôn</option>
+                                                <option value="Ly hôn" <?php echo ($detail['marital_status']??'')=='Ly hôn'?'selected':''; ?>>Ly hôn</option>
+                                            </select>
+                                        </div>
+
                                         <div class="col-md-6"><label>Quốc tịch</label><input type="text" name="nationality" class="form-control" value="<?php echo $detail['nationality'] ?? 'Việt Nam'; ?>"></div>
-                                        <div class="col-12"><label>Địa chỉ hiện tại</label><input type="text" name="current_address" class="form-control" value="<?php echo $detail['current_address'] ?? ''; ?>"></div>
+                                        
+                                        <div class="col-md-6"><label>Quê quán</label><input type="text" name="hometown" class="form-control" value="<?php echo $detail['hometown'] ?? ''; ?>"></div>
+                                        
+                                        <div class="col-md-6"><label>Địa chỉ thường trú</label><input type="text" name="address" class="form-control" value="<?php echo $detail['address'] ?? ''; ?>"></div>
+
+                                        <div class="col-12"><label>Nơi ở hiện tại</label><input type="text" name="current_address" class="form-control" value="<?php echo $detail['current_address'] ?? ''; ?>"></div>
                                         <div class="col-12"><label>Tiểu sử</label><textarea name="biography" class="form-control"><?php echo $detail['biography'] ?? ''; ?></textarea></div>
                                         
                                         <div class="col-12 mt-3"><label class="fw-bold">Ảnh đại diện mới (Nếu đổi)</label><input type="file" name="avatar_img" class="form-control"></div>
