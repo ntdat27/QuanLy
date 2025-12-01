@@ -8,113 +8,130 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $user_id = $_SESSION['user_id'];
-$role_id = $_SESSION['role_id'];
 $msg = "";
 
-// Kiểm tra pending request
-$has_pending_request = false;
-if ($role_id != 1) { 
-    $check_pending = $conn->query("SELECT * FROM profile_requests WHERE user_id = $user_id AND status = 'pending'");
-    if ($check_pending->num_rows > 0) $has_pending_request = true;
-}
-
-// --- XỬ LÝ LƯU HỒ SƠ ---
-if (isset($_POST['save_profile'])) {
-    $full_name = trim($_POST['full_name']);
-    $email = trim($_POST['email']);
-    $phone = $_POST['phone'];
-    $dob = $_POST['dob'];
-    $address = $_POST['address'];
-    $edu = $_POST['education_level'];
-    $major = $_POST['major'];
-    $cert_type = $_POST['certificate_type'];
-    $cert_score = $_POST['certificate_score'];
-    $bio = $_POST['biography'];
-
-    // 1. Xử lý Ảnh AVATAR (Mới)
-    $avatar_path = $_POST['current_avatar'] ?? 'img/default.jpg';
-    if (isset($_FILES['avatar_img']) && $_FILES['avatar_img']['error'] == 0) {
-        $target = "img/avatars/" . time() . "_" . basename($_FILES['avatar_img']['name']);
-        if (!is_dir('img/avatars')) mkdir('img/avatars', 0777, true);
-        if (move_uploaded_file($_FILES['avatar_img']['tmp_name'], $target)) {
-            $avatar_path = $target;
-        }
-    }
-
-    // 2. Xử lý Ảnh Bằng cấp & Chứng chỉ
-    $edu_proof = $_POST['current_edu_proof'] ?? '';
-    if (isset($_FILES['edu_img']) && $_FILES['edu_img']['error'] == 0) {
-        $target = "img/proofs/" . time() . "_edu_" . basename($_FILES['edu_img']['name']);
-        if (!is_dir('img/proofs')) mkdir('img/proofs', 0777, true);
-        if (move_uploaded_file($_FILES['edu_img']['tmp_name'], $target)) $edu_proof = $target;
-    }
-
-    $cert_proof = $_POST['current_cert_proof'] ?? '';
-    if (isset($_FILES['cert_img']) && $_FILES['cert_img']['error'] == 0) {
-        $target = "img/proofs/" . time() . "_cert_" . basename($_FILES['cert_img']['name']);
-        if (!is_dir('img/proofs')) mkdir('img/proofs', 0777, true);
-        if (move_uploaded_file($_FILES['cert_img']['tmp_name'], $target)) $cert_proof = $target;
-    }
-
-    if ($role_id == 1) {
-        // --- ADMIN: LƯU THẲNG ---
-        $conn->query("UPDATE users SET full_name='$full_name', email='$email', avatar='$avatar_path' WHERE id=$user_id");
-        
-        $check = $conn->query("SELECT user_id FROM employee_details WHERE user_id = $user_id");
-        if ($check->num_rows > 0) {
-            $stmt = $conn->prepare("UPDATE employee_details SET phone=?, dob=?, address=?, education_level=?, major=?, certificate_type=?, certificate_score=?, biography=?, edu_proof=?, cert_proof=? WHERE user_id=?");
-            $stmt->bind_param("ssssssdsssi", $phone, $dob, $address, $edu, $major, $cert_type, $cert_score, $bio, $edu_proof, $cert_proof, $user_id);
-        } else {
-            $stmt = $conn->prepare("INSERT INTO employee_details (phone, dob, address, education_level, major, certificate_type, certificate_score, biography, edu_proof, cert_proof, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("ssssssdsssi", $phone, $dob, $address, $edu, $major, $cert_type, $cert_score, $bio, $edu_proof, $cert_proof, $user_id);
-        }
-        $stmt->execute();
-        $_SESSION['full_name'] = $full_name;
-        $_SESSION['avatar'] = $avatar_path; // Cập nhật session ngay
-        $msg = "<div class='alert alert-success'>Cập nhật hồ sơ thành công!</div>";
+// --- XỬ LÝ GỬI YÊU CẦU (Dùng chung logic) ---
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     
-    } else {
-        // --- USER: GỬI YÊU CẦU ---
-        if ($has_pending_request) {
-            $msg = "<div class='alert alert-warning'>Đang có yêu cầu chờ duyệt!</div>";
+    // Hàm hỗ trợ upload ảnh
+    function uploadFile($fileInputName, $prefix) {
+        if (isset($_FILES[$fileInputName]) && $_FILES[$fileInputName]['error'] == 0) {
+            $target = "img/proofs/" . time() . "_{$prefix}_" . basename($_FILES[$fileInputName]['name']);
+            if (!is_dir('img/proofs')) mkdir('img/proofs', 0777, true);
+            if (move_uploaded_file($_FILES[$fileInputName]['tmp_name'], $target)) return $target;
+        }
+        return null;
+    }
+
+    $req_type = '';
+    $data = [];
+
+    // 1. Yêu cầu Sửa thông tin Cá nhân
+    if (isset($_POST['req_personal'])) {
+        $req_type = 'personal';
+        $data = [
+            'full_name' => $_POST['full_name'],
+            'email' => $_POST['email'],
+            'phone' => $_POST['phone'],
+            'dob' => $_POST['dob'],
+            'address' => $_POST['address'],
+            'gender' => $_POST['gender'],
+            'nationality' => $_POST['nationality'],
+            'marital_status' => $_POST['marital_status'],
+            'zalo' => $_POST['zalo'],
+            'current_address' => $_POST['current_address'],
+            'hometown' => $_POST['hometown'],
+            'biography' => $_POST['biography']
+        ];
+        // Avatar
+        $avatar = uploadFile('avatar_img', 'avt');
+        if($avatar) $data['avatar'] = $avatar;
+    }
+
+    // 2. Yêu cầu Sửa Chuyên môn
+    if (isset($_POST['req_teaching'])) {
+        $req_type = 'teaching';
+        $data = [
+            'education_level' => $_POST['education_level'],
+            'major' => $_POST['major'],
+            'certificate_type' => $_POST['certificate_type'],
+            'certificate_score' => $_POST['certificate_score'],
+            'main_subject' => $_POST['main_subject'],
+            'teaching_band' => $_POST['teaching_band'],
+            'demo_video_link' => $_POST['demo_video_link']
+        ];
+        // Ảnh bằng cấp
+        $edu_proof = uploadFile('edu_img', 'edu');
+        if($edu_proof) $data['edu_proof'] = $edu_proof;
+        
+        $cert_proof = uploadFile('cert_img', 'cert');
+        if($cert_proof) $data['cert_proof'] = $cert_proof;
+    }
+
+    // 3. Yêu cầu Thêm Giấy tờ Pháp lý
+    if (isset($_POST['req_legal'])) {
+        $req_type = 'legal';
+        $data = [
+            'doc_type' => $_POST['doc_type'],
+            'doc_number' => $_POST['doc_number'],
+            'issue_date' => $_POST['issue_date'],
+            'expiry_date' => $_POST['expiry_date'],
+            'place_of_issue' => $_POST['place_of_issue']
+        ];
+        $front = uploadFile('file_front', 'doc_front');
+        if($front) $data['doc_file_front'] = $front;
+        $back = uploadFile('file_back', 'doc_back');
+        if($back) $data['doc_file_back'] = $back;
+    }
+
+    // 4. Yêu cầu Sửa Bảo hiểm
+    if (isset($_POST['req_insurance'])) {
+        $req_type = 'insurance';
+        $data = [
+            'social_status' => $_POST['social_status'],
+            'social_book_number' => $_POST['social_book_number'],
+            'health_card_number' => $_POST['health_card_number'],
+            'hospital_reg' => $_POST['hospital_reg']
+        ];
+    }
+
+    // 5. Yêu cầu Thêm Người thân
+    if (isset($_POST['req_contact'])) {
+        $req_type = 'contact';
+        $data = [
+            'name' => $_POST['contact_name'],
+            'relationship' => $_POST['relationship'],
+            'phone' => $_POST['contact_phone'],
+            'address' => $_POST['contact_address']
+        ];
+    }
+
+    // LƯU VÀO DB
+    if ($req_type && !empty($data)) {
+        $json_data = json_encode($data, JSON_UNESCAPED_UNICODE);
+        $stmt = $conn->prepare("INSERT INTO profile_requests (user_id, type, data_content, status) VALUES (?, ?, ?, 'pending')");
+        $stmt->bind_param("iss", $user_id, $req_type, $json_data);
+        if ($stmt->execute()) {
+            $msg = "<div class='alert alert-success'>Đã gửi yêu cầu cập nhật <strong>$req_type</strong> thành công!</div>";
         } else {
-            $sql = "INSERT INTO profile_requests (user_id, full_name, email, avatar, phone, dob, address, education_level, major, certificate_type, certificate_score, biography, edu_proof, cert_proof, status) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')";
-            $stmt = $conn->prepare($sql);
-            $stmt->bind_param("isssssssssdsss", $user_id, $full_name, $email, $avatar_path, $phone, $dob, $address, $edu, $major, $cert_type, $cert_score, $bio, $edu_proof, $cert_proof);
-            
-            if ($stmt->execute()) {
-                $msg = "<div class='alert alert-success'>Đã gửi yêu cầu! Vui lòng chờ duyệt.</div>";
-                $has_pending_request = true; 
-            } else {
-                $msg = "<div class='alert alert-danger'>Lỗi: " . $conn->error . "</div>";
-            }
+            $msg = "<div class='alert alert-danger'>Lỗi: " . $conn->error . "</div>";
         }
     }
 }
 
-// --- ĐỔI MẬT KHẨU ---
-if (isset($_POST['change_pass'])) {
-    $old = $_POST['old_pass'];
-    $new = $_POST['new_pass'];
-    $confirm = $_POST['confirm_pass'];
+// --- LẤY DỮ LIỆU HIỂN THỊ ---
+$user = $conn->query("SELECT u.*, r.name as role_name FROM users u JOIN roles r ON u.role_id = r.id WHERE u.id=$user_id")->fetch_assoc();
+$detail = $conn->query("SELECT * FROM employee_details WHERE user_id=$user_id")->fetch_assoc();
+$teaching = $conn->query("SELECT * FROM teaching_profile WHERE user_id=$user_id")->fetch_assoc();
+$legal_docs = $conn->query("SELECT * FROM legal_documents WHERE user_id=$user_id");
+$contracts = $conn->query("SELECT * FROM labor_contracts WHERE user_id=$user_id");
+$insurance = $conn->query("SELECT * FROM insurance WHERE user_id=$user_id")->fetch_assoc();
+$contacts = $conn->query("SELECT * FROM emergency_contacts WHERE user_id=$user_id");
 
-    $u = $conn->query("SELECT password FROM users WHERE id=$user_id")->fetch_assoc();
-    if (password_verify($old, $u['password'])) {
-        if ($new === $confirm) {
-            $hash = password_hash($new, PASSWORD_DEFAULT);
-            $conn->query("UPDATE users SET password='$hash' WHERE id=$user_id");
-            $msg = "<div class='alert alert-success'>Đổi mật khẩu thành công!</div>";
-        } else $msg = "<div class='alert alert-danger'>Mật khẩu mới không khớp!</div>";
-    } else $msg = "<div class='alert alert-danger'>Mật khẩu cũ không đúng!</div>";
-}
-
-// Lấy thông tin hiển thị
-$sql_u = "SELECT u.*, r.name as role_name, ed.* FROM users u 
-          LEFT JOIN roles r ON u.role_id = r.id 
-          LEFT JOIN employee_details ed ON u.id = ed.user_id 
-          WHERE u.id = $user_id";
-$user = $conn->query($sql_u)->fetch_assoc();
+// Lấy các yêu cầu đang chờ (để hiển thị trạng thái)
+$pending_reqs = [];
+$res_pending = $conn->query("SELECT type FROM profile_requests WHERE user_id=$user_id AND status='pending'");
+while($r = $res_pending->fetch_assoc()) $pending_reqs[] = $r['type'];
 ?>
 
 <!DOCTYPE html>
@@ -124,127 +141,180 @@ $user = $conn->query($sql_u)->fetch_assoc();
     <title>Hồ sơ cá nhân</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <style>
-        .section-title { border-left: 4px solid #0d6efd; padding-left: 10px; font-weight: bold; color: #0d6efd; margin-bottom: 15px; margin-top: 10px; }
-        .disabled-overlay { pointer-events: none; opacity: 0.6; }
-    </style>
 </head>
 <body class="bg-light">
     <div class="container mt-4 mb-5">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h3><i class="fas fa-user-circle text-primary"></i> Hồ sơ của tôi</h3>
-            <a href="<?php echo ($role_id == 1) ? 'admin_dashboard.php' : 'user_dashboard.php'; ?>" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Quay lại Dashboard</a>
+            <a href="user_dashboard.php" class="btn btn-secondary">Quay lại Dashboard</a>
         </div>
 
         <?php echo $msg; ?>
-        <?php if ($has_pending_request): ?>
-        <div class="alert alert-warning border-warning shadow-sm">
-            <i class="fas fa-hourglass-half"></i> Hồ sơ đang chờ duyệt! Vui lòng đợi Quản trị viên xử lý.
-        </div>
-        <?php endif; ?>
 
         <div class="row">
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <div class="card shadow-sm mb-3">
                     <div class="card-body text-center">
-                        <img src="<?php echo $user['avatar'] ?? 'img/default.jpg'; ?>" class="rounded-circle mx-auto d-block mb-3" style="width: 120px; height: 120px; object-fit: cover;">
-                        <h5 class="mb-0"><?php echo $user['full_name']; ?></h5>
-                        <small class="text-muted"><?php echo $user['email']; ?></small>
-                        <div class="mt-2"><span class="badge bg-primary"><?php echo $user['role_name']; ?></span></div>
+                        <img src="<?php echo $user['avatar'] ?? 'img/default.jpg'; ?>" class="rounded-circle mb-3 border" style="width: 120px; height: 120px; object-fit: cover;">
+                        <h5><?php echo $user['full_name']; ?></h5>
+                        <span class="badge bg-primary"><?php echo $user['role_name']; ?></span>
                     </div>
                 </div>
                 
-                <div class="card shadow-sm mb-3 border-danger">
-                    <div class="card-header bg-danger text-white fw-bold"><i class="fas fa-key"></i> Đổi mật khẩu</div>
-                    <div class="card-body">
-                        <form method="POST">
-                            <div class="mb-2"><label class="form-label">Mật khẩu cũ</label><input type="password" name="old_pass" class="form-control" required></div>
-                            <div class="mb-2"><label class="form-label">Mật khẩu mới</label><input type="password" name="new_pass" class="form-control" required></div>
-                            <div class="mb-3"><label class="form-label">Nhập lại mới</label><input type="password" name="confirm_pass" class="form-control" required></div>
-                            <button type="submit" name="change_pass" class="btn btn-danger w-100">Xác nhận đổi</button>
-                        </form>
-                    </div>
+                <?php if(!empty($pending_reqs)): ?>
+                <div class="card shadow-sm border-warning">
+                    <div class="card-header bg-warning text-dark fw-bold"><i class="fas fa-clock"></i> Đang chờ duyệt</div>
+                    <ul class="list-group list-group-flush">
+                        <?php foreach($pending_reqs as $type): ?>
+                            <li class="list-group-item small">Cập nhật: <strong><?php echo ucfirst($type); ?></strong></li>
+                        <?php endforeach; ?>
+                    </ul>
                 </div>
+                <?php endif; ?>
             </div>
 
-            <div class="col-md-8">
+            <div class="col-md-9">
                 <div class="card shadow-sm">
-                    <div class="card-header bg-white fw-bold d-flex justify-content-between">
-                        <span>Thông tin chi tiết</span>
-                        <span class="badge <?php echo $has_pending_request?'bg-warning text-dark':'bg-success'; ?>"><?php echo $has_pending_request?'Đang khóa':'Có thể sửa'; ?></span>
+                    <div class="card-header bg-white">
+                        <ul class="nav nav-tabs card-header-tabs" id="profileTabs" role="tablist">
+                            <li class="nav-item"><button class="nav-link active fw-bold" data-bs-toggle="tab" data-bs-target="#tab1">1. Cá nhân</button></li>
+                            <li class="nav-item"><button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#tab2">2. Chuyên môn</button></li>
+                            <li class="nav-item"><button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#tab3">3. Pháp lý</button></li>
+                            <li class="nav-item"><button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#tab4">4. Hợp đồng</button></li>
+                            <li class="nav-item"><button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#tab5">5. Bảo hiểm</button></li>
+                            <li class="nav-item"><button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#tab6">6. Người thân</button></li>
+                        </ul>
                     </div>
-                    <div class="card-body <?php echo $has_pending_request ? 'disabled-overlay' : ''; ?>">
-                        <form method="POST" enctype="multipart/form-data">
+                    <div class="card-body">
+                        <div class="tab-content">
                             
-                            <div class="section-title">1. Thông tin chung</div>
-                            
-                            <div class="mb-3 row align-items-center">
-                                <label class="col-sm-3 col-form-label fw-bold">Ảnh đại diện</label>
-                                <div class="col-sm-9">
-                                    <input type="file" name="avatar_img" class="form-control" accept="image/*">
-                                    <input type="hidden" name="current_avatar" value="<?php echo $user['avatar'] ?? ''; ?>">
-                                    <div class="form-text small">Chọn ảnh mới nếu muốn thay đổi avatar.</div>
-                                </div>
+                            <div class="tab-pane fade show active" id="tab1">
+                                <form method="POST" enctype="multipart/form-data">
+                                    <div class="row g-3">
+                                        <div class="col-12 border-bottom pb-2 text-primary fw-bold">Thông tin cơ bản</div>
+                                        <div class="col-md-6"><label>Họ tên</label><input type="text" name="full_name" class="form-control" value="<?php echo $user['full_name']; ?>" required></div>
+                                        <div class="col-md-6"><label>Email</label><input type="email" name="email" class="form-control" value="<?php echo $user['email']; ?>" required></div>
+                                        <div class="col-md-6"><label>SĐT</label><input type="text" name="phone" class="form-control" value="<?php echo $detail['phone'] ?? ''; ?>"></div>
+                                        <div class="col-md-6"><label>Ngày sinh</label><input type="date" name="dob" class="form-control" value="<?php echo $detail['dob'] ?? ''; ?>"></div>
+                                        <div class="col-md-6"><label>Giới tính</label>
+                                            <select name="gender" class="form-select">
+                                                <option value="Nam" <?php echo ($detail['gender']??'')=='Nam'?'selected':''; ?>>Nam</option>
+                                                <option value="Nữ" <?php echo ($detail['gender']??'')=='Nữ'?'selected':''; ?>>Nữ</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6"><label>Quốc tịch</label><input type="text" name="nationality" class="form-control" value="<?php echo $detail['nationality'] ?? 'Việt Nam'; ?>"></div>
+                                        <div class="col-12"><label>Địa chỉ hiện tại</label><input type="text" name="current_address" class="form-control" value="<?php echo $detail['current_address'] ?? ''; ?>"></div>
+                                        <div class="col-12"><label>Tiểu sử</label><textarea name="biography" class="form-control"><?php echo $detail['biography'] ?? ''; ?></textarea></div>
+                                        
+                                        <div class="col-12 mt-3"><label class="fw-bold">Ảnh đại diện mới (Nếu đổi)</label><input type="file" name="avatar_img" class="form-control"></div>
+
+                                        <div class="col-12 text-end mt-3">
+                                            <button type="submit" name="req_personal" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Gửi yêu cầu sửa</button>
+                                        </div>
+                                    </div>
+                                </form>
                             </div>
 
-                            <div class="row g-2 mb-3">
-                                <div class="col-md-6"><label class="form-label">Họ tên</label><input type="text" name="full_name" class="form-control" value="<?php echo $user['full_name']; ?>" required></div>
-                                <div class="col-md-6"><label class="form-label">Email</label><input type="email" name="email" class="form-control" value="<?php echo $user['email']; ?>" required></div>
-                                <div class="col-md-6"><label class="form-label">SĐT</label><input type="text" name="phone" class="form-control" value="<?php echo $user['phone'] ?? ''; ?>"></div>
-                                <div class="col-md-6"><label class="form-label">Ngày sinh</label><input type="date" name="dob" class="form-control" value="<?php echo $user['dob'] ?? ''; ?>"></div>
-                                <div class="col-12"><label class="form-label">Địa chỉ</label><input type="text" name="address" class="form-control" value="<?php echo $user['address'] ?? ''; ?>"></div>
+                            <div class="tab-pane fade" id="tab2">
+                                <form method="POST" enctype="multipart/form-data">
+                                    <div class="row g-3">
+                                        <div class="col-md-6"><label>Trình độ</label><select name="education_level" class="form-select"><option value="Đại học" selected>Đại học</option><option value="Thạc sĩ">Thạc sĩ</option></select></div>
+                                        <div class="col-md-6"><label>Chuyên ngành</label><input type="text" name="major" class="form-control" value="<?php echo $detail['major'] ?? ''; ?>"></div>
+                                        <div class="col-md-6"><label>Chứng chỉ NN</label><select name="certificate_type" class="form-select"><option value="None">Không</option><option value="IELTS">IELTS</option><option value="TOEIC">TOEIC</option></select></div>
+                                        <div class="col-md-6"><label>Điểm số</label><input type="number" step="0.5" name="certificate_score" class="form-control" value="<?php echo $detail['certificate_score'] ?? ''; ?>"></div>
+                                        
+                                        <div class="col-md-6"><label>Ảnh Bằng cấp</label><input type="file" name="edu_img" class="form-control"></div>
+                                        <div class="col-md-6"><label>Ảnh Chứng chỉ</label><input type="file" name="cert_img" class="form-control"></div>
+
+                                        <div class="col-12 border-top pt-3 mt-3"><label class="fw-bold">Năng lực giảng dạy</label></div>
+                                        <div class="col-md-6"><label>Môn dạy</label><input type="text" name="main_subject" class="form-control" value="<?php echo $teaching['main_subject'] ?? ''; ?>"></div>
+                                        <div class="col-md-6"><label>Band dạy</label><input type="text" name="teaching_band" class="form-control" value="<?php echo $teaching['teaching_band'] ?? ''; ?>"></div>
+                                        <div class="col-12"><label>Link Demo Video</label><input type="text" name="demo_video_link" class="form-control" value="<?php echo $teaching['demo_video_link'] ?? ''; ?>"></div>
+
+                                        <div class="col-12 text-end mt-3">
+                                            <button type="submit" name="req_teaching" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Gửi yêu cầu sửa</button>
+                                        </div>
+                                    </div>
+                                </form>
                             </div>
 
-                            <div class="section-title">2. Bằng cấp (Ảnh hưởng lương)</div>
-                            <div class="row g-2 mb-3 bg-light p-3 rounded border mx-0">
-                                <div class="col-md-4">
-                                    <label class="form-label fw-bold">Trình độ</label>
-                                    <select name="education_level" class="form-select">
-                                        <option value="">-- Chọn --</option>
-                                        <?php $levels = ['Trung cấp', 'Cao đẳng', 'Đại học', 'Thạc sĩ', 'Tiến sĩ']; foreach($levels as $l) { $sel = ($user['education_level']??'')==$l?'selected':''; echo "<option value='$l' $sel>$l</option>"; } ?>
-                                    </select>
-                                </div>
-                                <div class="col-md-4"><label class="form-label">Chuyên ngành</label><input type="text" name="major" class="form-control" value="<?php echo $user['major'] ?? ''; ?>"></div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Ảnh Bằng</label>
-                                    <input type="file" name="edu_img" class="form-control">
-                                    <input type="hidden" name="current_edu_proof" value="<?php echo $user['edu_proof'] ?? ''; ?>">
-                                    <?php if(!empty($user['edu_proof'])): ?><a href="<?php echo $user['edu_proof']; ?>" target="_blank" class="small"><i class="fas fa-image"></i> Xem ảnh</a><?php endif; ?>
-                                </div>
+                            <div class="tab-pane fade" id="tab3">
+                                <h6 class="text-success">Giấy tờ đã lưu</h6>
+                                <table class="table table-sm table-bordered mb-3">
+                                    <thead><tr><th>Loại</th><th>Số</th><th>Hết hạn</th></tr></thead>
+                                    <tbody>
+                                        <?php while($d = $legal_docs->fetch_assoc()): ?>
+                                            <tr><td><?php echo $d['doc_type']; ?></td><td><?php echo $d['doc_number']; ?></td><td><?php echo $d['expiry_date']; ?></td></tr>
+                                        <?php endwhile; ?>
+                                    </tbody>
+                                </table>
+                                <hr>
+                                <h6>Gửi yêu cầu thêm Giấy tờ mới</h6>
+                                <form method="POST" enctype="multipart/form-data" class="row g-2">
+                                    <div class="col-md-3"><select name="doc_type" class="form-select"><option>CCCD</option><option>Hộ chiếu</option></select></div>
+                                    <div class="col-md-3"><input type="text" name="doc_number" class="form-control" placeholder="Số giấy tờ" required></div>
+                                    <div class="col-md-3"><input type="date" name="issue_date" class="form-control" title="Ngày cấp"></div>
+                                    <div class="col-md-3"><input type="date" name="expiry_date" class="form-control" title="Hết hạn"></div>
+                                    <div class="col-md-6"><input type="file" name="file_front" class="form-control" title="Mặt trước"></div>
+                                    <div class="col-md-6"><input type="file" name="file_back" class="form-control" title="Mặt sau"></div>
+                                    <div class="col-12 text-end"><button type="submit" name="req_legal" class="btn btn-success">Gửi thêm</button></div>
+                                </form>
                             </div>
 
-                            <div class="section-title">3. Ngoại ngữ</div>
-                            <div class="row g-2 mb-3 bg-light p-3 rounded border mx-0">
-                                <div class="col-md-4">
-                                    <label class="form-label fw-bold">Chứng chỉ</label>
-                                    <select name="certificate_type" class="form-select">
-                                        <option value="None" <?php echo ($user['certificate_type']??'')=='None'?'selected':''; ?>>Không</option>
-                                        <option value="IELTS" <?php echo ($user['certificate_type']??'')=='IELTS'?'selected':''; ?>>IELTS</option>
-                                        <option value="TOEIC" <?php echo ($user['certificate_type']??'')=='TOEIC'?'selected':''; ?>>TOEIC</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-4"><label class="form-label">Điểm số</label><input type="number" step="0.5" name="certificate_score" class="form-control" value="<?php echo $user['certificate_score'] ?? ''; ?>"></div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Ảnh Chứng chỉ</label>
-                                    <input type="file" name="cert_img" class="form-control">
-                                    <input type="hidden" name="current_cert_proof" value="<?php echo $user['cert_proof'] ?? ''; ?>">
-                                    <?php if(!empty($user['cert_proof'])): ?><a href="<?php echo $user['cert_proof']; ?>" target="_blank" class="small"><i class="fas fa-image"></i> Xem ảnh</a><?php endif; ?>
-                                </div>
+                            <div class="tab-pane fade" id="tab4">
+                                <div class="alert alert-info">Thông tin hợp đồng. Vui lòng liên hệ Nhân sự nếu có sai sót.</div>
+                                <table class="table table-bordered">
+                                    <thead><tr><th>Số HĐ</th><th>Loại</th><th>Thời hạn</th><th>Lương cứng</th></tr></thead>
+                                    <tbody>
+                                        <?php while($ct = $contracts->fetch_assoc()): ?>
+                                        <tr>
+                                            <td><?php echo $ct['contract_number']; ?></td>
+                                            <td><?php echo $ct['contract_type']; ?></td>
+                                            <td><?php echo $ct['start_date'] . ' -> ' . $ct['end_date']; ?></td>
+                                            <td><?php echo number_format($ct['base_salary']); ?> đ</td>
+                                        </tr>
+                                        <?php endwhile; ?>
+                                    </tbody>
+                                </table>
                             </div>
 
-                            <div class="section-title">4. Tiểu sử & Lai lịch</div>
-                            <div class="mb-3"><textarea name="biography" class="form-control" rows="4"><?php echo $user['biography'] ?? ''; ?></textarea></div>
-
-                            <div class="mt-3 text-end">
-                                <button type="submit" name="save_profile" class="btn btn-primary px-4" <?php echo $has_pending_request ? 'disabled' : ''; ?>>
-                                    <i class="fas fa-paper-plane"></i> <?php echo ($role_id == 1) ? 'Lưu Hồ Sơ' : 'Gửi Yêu Cầu Duyệt'; ?>
-                                </button>
+                            <div class="tab-pane fade" id="tab5">
+                                <form method="POST">
+                                    <div class="row g-3">
+                                        <div class="col-md-6"><label>Trạng thái BHXH</label><select name="social_status" class="form-select"><option value="Có đóng">Có đóng</option><option value="Không đóng">Không đóng</option></select></div>
+                                        <div class="col-md-6"><label>Số sổ BHXH</label><input type="text" name="social_book_number" class="form-control" value="<?php echo $insurance['social_book_number'] ?? ''; ?>"></div>
+                                        <div class="col-md-6"><label>Mã thẻ BHYT</label><input type="text" name="health_card_number" class="form-control" value="<?php echo $insurance['health_card_number'] ?? ''; ?>"></div>
+                                        <div class="col-md-6"><label>Nơi KCB</label><input type="text" name="hospital_reg" class="form-control" value="<?php echo $insurance['hospital_reg'] ?? ''; ?>"></div>
+                                        <div class="col-12 text-end mt-3"><button type="submit" name="req_insurance" class="btn btn-primary">Gửi yêu cầu sửa</button></div>
+                                    </div>
+                                </form>
                             </div>
-                        </form>
+
+                            <div class="tab-pane fade" id="tab6">
+                                <table class="table table-striped table-sm mb-3">
+                                    <thead><tr><th>Họ tên</th><th>Quan hệ</th><th>SĐT</th></tr></thead>
+                                    <tbody>
+                                        <?php while($ct = $contacts->fetch_assoc()): ?>
+                                        <tr><td><?php echo $ct['name']; ?></td><td><?php echo $ct['relationship']; ?></td><td><?php echo $ct['phone']; ?></td></tr>
+                                        <?php endwhile; ?>
+                                    </tbody>
+                                </table>
+                                <hr>
+                                <h6>Thêm người thân mới</h6>
+                                <form method="POST" class="row g-2">
+                                    <div class="col-md-4"><input type="text" name="contact_name" class="form-control" placeholder="Họ tên" required></div>
+                                    <div class="col-md-3"><input type="text" name="relationship" class="form-control" placeholder="Quan hệ" required></div>
+                                    <div class="col-md-3"><input type="text" name="contact_phone" class="form-control" placeholder="SĐT" required></div>
+                                    <div class="col-md-2"><button type="submit" name="req_contact" class="btn btn-success w-100">Thêm</button></div>
+                                </form>
+                            </div>
+
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

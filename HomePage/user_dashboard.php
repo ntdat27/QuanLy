@@ -68,7 +68,7 @@ $is_sales = hasPermission('lead.manage');
                         <span class="badge bg-primary text-white mb-3 px-3 py-2 rounded-pill"><?php echo $user_info['role_name']; ?></span>
                         <div class="d-grid gap-2 mt-2">
                             <a href="profile.php" class="btn btn-outline-primary"><i class="fas fa-user-edit me-2"></i>Cập nhật hồ sơ</a>
-                            <a href="profile.php" class="btn btn-outline-danger"><i class="fas fa-key me-2"></i>Đổi mật khẩu</a>
+                            <a href="change_password.php" class="btn btn-outline-danger"><i class="fas fa-key me-2"></i>Đổi mật khẩu</a>
                         </div>
                     </div>
                 </div>
