@@ -19,19 +19,31 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $image = 'img/default.jpg'; // Ảnh mặc định nếu không upload
 
         // Xử lý Upload Ảnh
-        if (isset($_FILES['image_file']) && $_FILES['image_file']['error'] == 0) {
-            $target_dir = "img/";
-            // Lấy tên file gốc (VD: hinh1.jpg)
-            $file_name = basename($_FILES["image_file"]["name"]);
-            $target_file = $target_dir . $file_name;
+        // Đoạn code an toàn thay thế cho phần xử lý upload cũ
+if (isset($_FILES['image_file']) && $_FILES['image_file']['error'] == 0) {
+    $allowed = ['jpg', 'jpeg', 'png', 'gif']; // Chỉ cho phép đuôi ảnh
+    $filename = $_FILES['image_file']['name'];
+    $file_ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+
+    // 1. Kiểm tra đuôi file
+    if (in_array($file_ext, $allowed)) {
+        // 2. Kiểm tra có phải ảnh thật không
+        if(getimagesize($_FILES['image_file']['tmp_name'])) {
+            $new_filename = time() . "_" . uniqid() . "." . $file_ext; // Đổi tên file ngẫu nhiên để tránh trùng
+            $target_file = "img/" . $new_filename;
             
-            // Di chuyển file từ bộ nhớ tạm vào thư mục img/
             if (move_uploaded_file($_FILES["image_file"]["tmp_name"], $target_file)) {
-                $image = $target_file; // Lưu đường dẫn mới (VD: img/hinh1.jpg)
+                $image = $target_file;
             } else {
-                $message = "<div class='alert alert-danger'>Lỗi: Không thể upload ảnh.</div>";
+                $message = "<div class='alert alert-danger'>Lỗi: Không thể lưu file.</div>";
             }
+            } else {
+                $message = "<div class='alert alert-danger'>Lỗi: File giả mạo, không phải ảnh!</div>";
+            }
+        } else {
+            $message = "<div class='alert alert-danger'>Lỗi: Chỉ cho phép file ảnh (JPG, PNG, GIF).</div>";
         }
+    }
         
         if (empty($message)) { // Chỉ lưu vào DB nếu không có lỗi upload
             $sql = "INSERT INTO news (title, summary, image) VALUES (?, ?, ?)";
