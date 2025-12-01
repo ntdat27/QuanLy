@@ -16,6 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (isset($_POST['add_news'])) {
         $title = $_POST['title'];
         $summary = $_POST['summary'];
+        $content = $_POST['content'];
         $image = 'img/default.jpg'; // Ảnh mặc định nếu không upload
 
         // Xử lý Upload Ảnh
@@ -46,9 +47,9 @@ if (isset($_FILES['image_file']) && $_FILES['image_file']['error'] == 0) {
     }
         
         if (empty($message)) { // Chỉ lưu vào DB nếu không có lỗi upload
-            $sql = "INSERT INTO news (title, summary, image) VALUES (?, ?, ?)";
+            $sql = "INSERT INTO news (title, summary, content, image) VALUES (?, ?, ?, ?)";
             $stmt = $conn->prepare($sql);
-            $stmt->bind_param("sss", $title, $summary, $image);
+            $stmt->bind_param("ssss", $title, $summary, $content, $image);
             
             if ($stmt->execute()) {
                 $message = "<div class='alert alert-success'>Đã đăng tin mới thành công!</div>";
@@ -99,6 +100,10 @@ $news_list = $conn->query("SELECT * FROM news ORDER BY created_at DESC");
                             <div class="mb-3">
                                 <label>Mô tả ngắn</label>
                                 <textarea name="summary" class="form-control" rows="3" required></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="fw-bold">Nội dung chi tiết</label>
+                                <textarea name="content" class="form-control" rows="10" placeholder="Nhập nội dung đầy đủ của bài viết..."></textarea>
                             </div>
                             
                             <div class="mb-3">
