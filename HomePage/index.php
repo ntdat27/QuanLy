@@ -70,9 +70,29 @@ $news_chunks = array_chunk($news_items, 2);
                     <li class="nav-item"><a class="nav-link" href="#news">Tin tức & Sự kiện</a></li>
                 </ul>
                 <div class="d-flex align-items-center">
-                    <a href="mailto:IELTSschool@gmail.com" class="me-3 text-white"><i class="bi bi-envelope"></i> Ieltschool@gmail.com</a>
-                    <a href="tel:+84 8627516189" class="me-3 text-white"><i class="bi bi-telephone"></i> +84 862 7516 189</a>
-                    <a href="login.php" class="btn btn-orange ms-2">Đăng nhập</a>
+                    <a href="mailto:IELTSschool@gmail.com" class="me-3 text-white d-none d-lg-block"><i class="bi bi-envelope"></i> Ieltschool@gmail.com</a>
+                    <a href="tel:+84 8627516189" class="me-3 text-white d-none d-lg-block"><i class="bi bi-telephone"></i> +84 862 7516 189</a>
+                    
+                    <?php if (isset($_SESSION['user_id'])): ?>
+                        <?php 
+                            // Kiểm tra quyền để điều hướng đúng Dashboard
+                            // Role ID 1 (Admin) và 2 (Trưởng phòng) -> Admin Dashboard
+                            // Các Role khác -> User Dashboard
+                            $dashboard_link = (isset($_SESSION['role_id']) && ($_SESSION['role_id'] == 1 || $_SESSION['role_id'] == 2)) 
+                                            ? 'admin_dashboard.php' 
+                                            : 'user_dashboard.php';
+                        ?>
+                        <div class="dropdown">
+                            <a href="<?php echo $dashboard_link; ?>" class="btn btn-orange ms-2">
+                                <i class="fas fa-user-circle me-1"></i> Dashboard
+                            </a>
+                            <a href="logout.php" class="btn btn-outline-light ms-2 border-0" title="Đăng xuất">
+                                <i class="fas fa-sign-out-alt"></i>
+                            </a>
+                        </div>
+                    <?php else: ?>
+                        <a href="login.php" class="btn btn-orange ms-2">Đăng nhập</a>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -145,23 +165,23 @@ $news_chunks = array_chunk($news_items, 2);
         <h2 class="text-center mb-5">Thành tựu nổi bật</h2>
         <div class="achievements-grid scroll-animate">
             <div class="achievement-box">
-                <div class="number">0</div>
+                <div class="number" data-target="2005">0</div> 
                 <div class="description">Học viên đã đạt mục tiêu</div>
             </div>
             <div class="achievement-box">
-                <div class="number">0</div>
-                <div class="description">Tỷ lệ đạt điểm cam kết</div>
+                <div class="number" data-target="98">0</div>
+                <div class="description">Tỷ lệ đạt điểm cam kết (%)</div>
             </div>
             <div class="achievement-box">
-                <div class="number">0</div>
+                <div class="number" data-target="6.5">0</div>
                 <div class="description">Là điểm IELTS trung bình</div>
             </div>
             <div class="achievement-box">
-                <div class="number">0</div>
+                <div class="number" data-target="24">0</div>
                 <div class="description">Giáo viên đạt 7.5+ IELTS</div>
             </div>
             <div class="achievement-box">
-                <div class="number">0</div>
+                <div class="number" data-target="10">0</div>
                 <div class="description">Năm kinh nghiệm đào tạo</div>
             </div>
         </div>

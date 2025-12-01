@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Máy chủ: 127.0.0.1
--- Thời gian đã tạo: Th12 01, 2025 lúc 06:45 PM
+-- Thời gian đã tạo: Th12 01, 2025 lúc 08:00 PM
 -- Phiên bản máy phục vụ: 10.4.32-MariaDB
 -- Phiên bản PHP: 8.1.25
 
@@ -384,7 +384,9 @@ CREATE TABLE `news` (
 --
 
 INSERT INTO `news` (`id`, `title`, `summary`, `content`, `image`, `created_at`) VALUES
-(2, 'Thông báo tuyển sinh', 'Chào mừng khóa học mới', NULL, 'img/[520x270-cr]thongbao.png', '2025-12-01');
+(3, 'Thông báo tuyển sinh', 'Chào mừng năm học mới', 'Không có nội dung chi tiết', 'img/1764612548_692dd9c4b2a7b.jpg', '2025-12-02'),
+(4, 'Thông báo Lịch Thi', 'Lịch Thi Mới', 'Thông báo về lịch thi', 'img/1764613215_692ddc5fb726f.jpg', '2025-12-02'),
+(5, 'Thông báo Tuyên truyền vận động hiến máu', 'Tuyên truyền hiến máu', 'Hiến máu cứu người', 'img/1764615549_692de57d0368a.jpg', '2025-12-02');
 
 -- --------------------------------------------------------
 
@@ -913,7 +915,7 @@ ALTER TABLE `legal_documents`
 -- AUTO_INCREMENT cho bảng `news`
 --
 ALTER TABLE `news`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT cho bảng `notifications`
