@@ -15,6 +15,26 @@ require_once 'db_connect.php'; // Kết nối database để lấy tin tức
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div class="chatbot-toggler">
+        <span class="material-symbols-rounded"><i class="fas fa-comment-dots"></i></span>
+        <span class="material-symbols-outlined"><i class="fas fa-times"></i></span>
+    </div>
+    <div class="chatbot">
+        <header>
+            <h2>Trợ lý ảo IELTSschool</h2>
+            <span class="close-btn material-symbols-outlined"><i class="fas fa-times"></i></span>
+        </header>
+        <ul class="chatbox">
+            <li class="chat incoming">
+                <span class="material-symbols-outlined"><i class="fas fa-robot"></i></span>
+                <p>Xin chào 👋<br>Tôi là trợ lý ảo của trung tâm. Bạn cần hỗ trợ gì không?</p>
+            </li>
+        </ul>
+        <div class="chat-input">
+            <textarea placeholder="Nhập câu hỏi..." spellcheck="false" required></textarea>
+            <span id="send-btn" class="material-symbols-rounded"><i class="fas fa-paper-plane"></i></span>
+        </div>
+    </div>
     <nav class="navbar navbar-expand-lg">
         <div class="container">
             <a class="navbar-brand fw-bold" href="#home">IELTS school</a>
@@ -31,7 +51,7 @@ require_once 'db_connect.php'; // Kết nối database để lấy tin tức
                     <li class="nav-item"><a class="nav-link" href="#news">Tin tức & Sự kiện</a></li>
                 </ul>
                 <div class="d-flex align-items-center">
-                    <a href="mailto:Ieltsschool@gmail.com" class="me-3 text-white"><i class="bi bi-envelope"></i> Ieltschool@gmail.com</a>
+                    <a href="mailto:IELTSschool@gmail.com" class="me-3 text-white"><i class="bi bi-envelope"></i> Ieltschool@gmail.com</a>
                     <a href="tel:+84 8627516189" class="me-3 text-white"><i class="bi bi-telephone"></i> +84 862 7516 189</a>
                     <a href="login.php" class="btn btn-orange ms-2">Đăng nhập</a>
                 </div>
@@ -313,9 +333,9 @@ require_once 'db_connect.php'; // Kết nối database để lấy tin tức
                 <div class="col-lg-6 col-md-12 mb-4 mb-lg-0">
                     <h5 class="footer-title mb-3">Thông Tin Liên Hệ</h5>
                     <div class="contact-info">
-                        <p class="contact-item"><i class="fas fa-map-marker-alt icon-orange me-2"></i>Địa chỉ: Công ty trách nhiệm hữu hạn 4 thành viên ddmq</p>
+                        <p class="contact-item"><i class="fas fa-map-marker-alt icon-orange me-2"></i>Địa chỉ: Công ty trách nhiệm hữu hạn 4 thành viên IELTSschool</p>
                         <p class="contact-item"><i class="fas fa-phone icon-orange me-2"></i>Điện thoại: +84 8627516189</p>
-                        <p class="contact-item"><i class="fas fa-envelope icon-orange me-2"></i>Email: ddmq@gmail.com</p>
+                        <p class="contact-item"><i class="fas fa-envelope icon-orange me-2"></i>Email: IELTSschool@gmail.com</p>
                         <p class="contact-item"><i class="fas fa-clock icon-orange me-2"></i>Giờ làm việc: Thứ 2 - Thứ 6, 9:00 - 18:00</p>
                     </div>
                 </div>
@@ -331,7 +351,7 @@ require_once 'db_connect.php'; // Kết nối database để lấy tin tức
                 </div>
             </div>
             <hr class="divider mt-4 mb-4">
-            <div class="text-center copyright"><p class="mb-0">&copy; 2025 ddmq. All Rights Reserved.</p></div>
+            <div class="text-center copyright"><p class="mb-0">&copy; 2025 IELTSschool. All Rights Reserved.</p></div>
         </div>
     </footer>
 
