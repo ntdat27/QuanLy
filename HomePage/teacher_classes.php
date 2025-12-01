@@ -2,13 +2,28 @@
 session_start();
 require_once 'db_connect.php';
 
+// Check quyền
 if (!isset($_SESSION['user_id']) || !hasPermission('class.view')) {
     header("Location: index.php");
     exit();
 }
 
 $uid = $_SESSION['user_id'];
-$classes = $conn->query("SELECT * FROM classes WHERE teacher_id = $uid");
+$role_id = $_SESSION['role_id']; // Lấy Role ID từ session
+
+// LOGIC MỚI: Nếu là Admin (role_id = 1) hoặc Trưởng phòng (role_id = 2) thì xem HẾT. 
+// Còn lại (Giáo viên) chỉ xem lớp của mình.
+if ($role_id == 1 || $role_id == 2) {
+    // Admin xem tất cả lớp, JOIN thêm bảng users để lấy tên giáo viên dạy lớp đó
+    $sql = "SELECT c.*, u.full_name as teacher_name 
+            FROM classes c 
+            JOIN users u ON c.teacher_id = u.id";
+} else {
+    // Giáo viên chỉ xem lớp mình dạy
+    $sql = "SELECT *, 'Tôi' as teacher_name FROM classes WHERE teacher_id = $uid";
+}
+
+$classes = $conn->query($sql);
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -37,6 +52,7 @@ $classes = $conn->query("SELECT * FROM classes WHERE teacher_id = $uid");
                             <p class="card-text"><i class="fas fa-clock me-2 text-muted"></i> <strong>Lịch:</strong> <?php echo $row['schedule']; ?></p>
                             <p class="card-text"><i class="fas fa-map-marker-alt me-2 text-muted"></i> <strong>Phòng:</strong> <?php echo $row['room']; ?></p>
                             <p class="card-text"><i class="fas fa-users me-2 text-muted"></i> <strong>Sĩ số:</strong> <?php echo $row['student_count']; ?> học viên</p>
+                            <p class="card-text"><i class="fas fa-user-tie me-2 text-muted"></i> <strong>GV:</strong> <?php echo $row['teacher_name']; ?></p>
                             <a href="#" class="btn btn-outline-primary btn-sm w-100 mt-2">Điểm danh lớp này</a>
                         </div>
                     </div>

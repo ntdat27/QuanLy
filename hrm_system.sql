@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Máy chủ: 127.0.0.1
--- Thời gian đã tạo: Th12 01, 2025 lúc 04:14 PM
+-- Thời gian đã tạo: Th12 01, 2025 lúc 06:45 PM
 -- Phiên bản máy phục vụ: 10.4.32-MariaDB
 -- Phiên bản PHP: 8.1.25
 
@@ -92,7 +92,11 @@ CREATE TABLE `classes` (
 --
 
 INSERT INTO `classes` (`id`, `class_name`, `schedule`, `room`, `teacher_id`, `student_count`) VALUES
-(1, 'IELTS K12', 'T2-T4-T6 19h', '301', 4, 0);
+(1, 'IELTS K12', 'T2-T4-T6 19h', '301', 4, 0),
+(2, 'IELTS Foundation K14', 'Thứ 2 - Thứ 4 (18:00 - 19:30)', 'Phòng 101', 5, 15),
+(3, 'IELTS Speaking Master', 'Thứ 3 - Thứ 5 (19:30 - 21:00)', 'Phòng 202', 5, 12),
+(4, 'Intensive Writing', 'Thứ 7 - CN (09:00 - 11:00)', 'Phòng Online Zoom', 4, 20),
+(5, 'Giao tiếp nâng cao', 'Thứ 2 - Thứ 6 (18:00 - 19:30)', 'Phòng 305', 4, 8);
 
 -- --------------------------------------------------------
 
@@ -172,7 +176,7 @@ CREATE TABLE `employee_details` (
 
 INSERT INTO `employee_details` (`user_id`, `phone`, `dob`, `gender`, `nationality`, `marital_status`, `address`, `current_address`, `hometown`, `zalo`, `education_level`, `major`, `certificate_type`, `certificate_score`, `edu_proof`, `cert_proof`, `start_date`, `contract_type`, `biography`, `criminal_record_status`, `criminal_record_number`, `criminal_record_date`, `criminal_record_file`) VALUES
 (2, '0901000111', NULL, NULL, 'Việt Nam', NULL, NULL, NULL, NULL, NULL, 'Thạc sĩ', 'Quản lý giáo dục', 'IELTS', 7.5, NULL, NULL, '2018-01-01', 'Full-time', '10 năm kinh nghiệm quản lý.', 'Đang xác minh', NULL, NULL, NULL),
-(3, '0902000222', NULL, NULL, 'Việt Nam', NULL, NULL, NULL, NULL, NULL, 'Đại học', 'Kế toán', 'TOEIC', 700.0, NULL, NULL, '2021-05-01', 'Full-time', 'Kế toán viên chuyên nghiệp.', 'Đang xác minh', NULL, NULL, NULL),
+(3, '0902000222', '0000-00-00', 'Nam', 'Việt Nam', 'Độc thân', NULL, 'Ô diên hà NỘI', 'Haà Nội', '', 'Đại học', 'Kế toán', 'TOEIC', 700.0, NULL, NULL, '2021-05-01', 'Full-time', 'Kế toán viên chuyên nghiệp.', 'Đang xác minh', NULL, NULL, NULL),
 (4, '0903000333', NULL, NULL, 'Việt Nam', NULL, NULL, NULL, NULL, NULL, 'Thạc sĩ', 'TESOL', 'None', 0.0, NULL, NULL, '2023-01-15', 'Full-time', 'Giáo viên bản ngữ.', 'Đang xác minh', NULL, NULL, NULL),
 (5, '0904000444', NULL, NULL, 'Việt Nam', NULL, NULL, NULL, NULL, NULL, 'Đại học', 'Sư phạm Anh', 'IELTS', 8.0, NULL, NULL, '2022-09-01', 'Full-time', 'Giáo viên chuyên IELTS.', 'Đang xác minh', NULL, NULL, NULL),
 (6, '0905000555', NULL, NULL, 'Việt Nam', NULL, NULL, NULL, NULL, NULL, 'Cao đẳng', 'Kinh tế', 'None', 0.0, NULL, NULL, '2024-02-01', 'Full-time', 'Tư vấn viên.', 'Đang xác minh', NULL, NULL, NULL),
@@ -300,6 +304,7 @@ INSERT INTO `labor_contracts` (`id`, `user_id`, `contract_number`, `contract_typ
 CREATE TABLE `leads` (
   `id` int(11) NOT NULL,
   `name` varchar(100) NOT NULL,
+  `email` varchar(100) DEFAULT NULL,
   `phone` varchar(20) NOT NULL,
   `course_interest` varchar(100) DEFAULT NULL,
   `status` enum('new','contacted','enrolled','lost') DEFAULT 'new',
@@ -311,8 +316,12 @@ CREATE TABLE `leads` (
 -- Đang đổ dữ liệu cho bảng `leads`
 --
 
-INSERT INTO `leads` (`id`, `name`, `phone`, `course_interest`, `status`, `assigned_to`, `created_at`) VALUES
-(1, 'Trần A', '091111', 'IELTS', 'new', 6, '2025-12-01 04:33:17');
+INSERT INTO `leads` (`id`, `name`, `email`, `phone`, `course_interest`, `status`, `assigned_to`, `created_at`) VALUES
+(1, 'Trần A', NULL, '091111', 'IELTS', 'new', 6, '2025-12-01 04:33:17'),
+(2, 'Trần Văn Bình', 'binh.tran@gmail.com', '0912345678', 'IELTS 6.5 Cam kết', 'new', 10, '2025-12-01 17:28:09'),
+(3, 'Lê Thị Thu Thảo', 'thuthao@yahoo.com', '0987654321', 'Tiếng Anh Giao Tiếp', 'contacted', 6, '2025-12-01 17:28:09'),
+(4, 'Nguyễn Hoàng Nam', NULL, '0909123123', 'Khóa trẻ em', 'enrolled', 6, '2025-12-01 17:28:09'),
+(5, 'Phạm Minh Tuấn', NULL, '0911223344', 'Luyện đề cấp tốc', 'lost', 11, '2025-12-01 17:28:09');
 
 -- --------------------------------------------------------
 
@@ -500,6 +509,19 @@ CREATE TABLE `profile_requests` (
   `request_date` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Đang đổ dữ liệu cho bảng `profile_requests`
+--
+
+INSERT INTO `profile_requests` (`id`, `user_id`, `type`, `data_content`, `status`, `request_date`) VALUES
+(1, 3, 'personal', '{\"full_name\":\"Lê Kế Toán\",\"email\":\"acc@center.com\",\"phone\":\"0902000222\",\"dob\":\"\",\"address\":null,\"gender\":\"Nam\",\"nationality\":\"Việt Nam\",\"marital_status\":null,\"zalo\":null,\"current_address\":\"Ô diên hà NỘI\",\"hometown\":null,\"biography\":\"Kế toán viên chuyên nghiệp.\"}', 'approved', '2025-12-01 17:07:07'),
+(2, 3, 'personal', '{\"full_name\":\"Lê Kế Toán\",\"email\":\"acc@center.com\",\"phone\":\"0902000222\",\"dob\":\"\",\"address\":null,\"gender\":\"Nam\",\"nationality\":\"Việt Nam\",\"marital_status\":null,\"zalo\":null,\"current_address\":\"Ô diên hà NỘI\",\"hometown\":null,\"biography\":\"Kế toán viên chuyên nghiệp.\"}', 'approved', '2025-12-01 17:08:01'),
+(3, 3, 'personal', '{\"full_name\":\"Lê Kế Toán\",\"email\":\"acc@center.com\",\"phone\":\"0902000222\",\"dob\":\"\",\"address\":null,\"gender\":\"Nam\",\"nationality\":\"Việt Nam\",\"marital_status\":null,\"zalo\":null,\"current_address\":\"Ô diên hà NỘI\",\"hometown\":null,\"biography\":\"Kế toán viên chuyên nghiệp.\"}', 'approved', '2025-12-01 17:13:37'),
+(4, 3, 'personal', '{\"full_name\":\"Lê Kế Toán\",\"email\":\"acc@center.com\",\"phone\":\"0902000222\",\"dob\":\"\",\"address\":\"Không\",\"gender\":\"Nam\",\"nationality\":\"Việt Nam\",\"marital_status\":\"Độc thân\",\"zalo\":\"\",\"current_address\":\"Ô diên hà NỘI\",\"hometown\":\"Haà Nội\",\"biography\":\"Kế toán viên chuyên nghiệp.\"}', 'approved', '2025-12-01 17:13:58'),
+(5, 3, 'teaching', '{\"education_level\":\"Đại học\",\"major\":\"Kế toán\",\"certificate_type\":\"None\",\"certificate_score\":\"700.0\",\"main_subject\":\"\",\"teaching_band\":\"\",\"demo_video_link\":\"\"}', 'rejected', '2025-12-01 17:14:30'),
+(6, 3, 'personal', '{\"full_name\":\"Lê Kế Toán\",\"email\":\"acc@center.com\",\"phone\":\"0902000222\",\"dob\":\"\",\"address\":\"\",\"gender\":\"Nam\",\"nationality\":\"Việt Nam\",\"marital_status\":\"Độc thân\",\"zalo\":\"\",\"current_address\":\"Ô diên hà NỘI\",\"hometown\":\"Haà Nội\",\"biography\":\"Kế toán viên chuyên nghiệp.\",\"avatar\":\"img\\/proofs\\/1764609292_avt_z7242676947454_e321b0abf1b5ceb643642e31ab1ec773.jpg\"}', 'approved', '2025-12-01 17:14:52'),
+(7, 3, 'personal', '{\"full_name\":\"Lê Kế Toán\",\"email\":\"acc@center.com\",\"phone\":\"0902000222\",\"dob\":\"\",\"address\":\"\",\"gender\":\"Nam\",\"nationality\":\"Việt Nam\",\"marital_status\":\"Độc thân\",\"zalo\":\"\",\"current_address\":\"Ô diên hà NỘI\",\"hometown\":\"Haà Nội\",\"biography\":\"Kế toán viên chuyên nghiệp.\",\"avatar\":\"img\\/proofs\\/1764609337_avt_[520x270-cr]thongbao.png\"}', 'approved', '2025-12-01 17:15:37');
+
 -- --------------------------------------------------------
 
 --
@@ -652,7 +674,7 @@ CREATE TABLE `users` (
 INSERT INTO `users` (`id`, `role_id`, `department_id`, `username`, `password`, `email`, `full_name`, `avatar`, `status`, `created_at`) VALUES
 (1, 1, NULL, 'admin', '$2y$10$1tzcfBb3Y1Z3dUIdd4eE2esR25Z4ARIVv2zLvJ8VMZOGnHEc4tENi', 'admin@center.com', 'Super Admin', 'img/default.jpg', 'active', '2025-12-01 04:33:16'),
 (2, 2, 3, 'tp_daotao', '$2y$10$1tzcfBb3Y1Z3dUIdd4eE2esR25Z4ARIVv2zLvJ8VMZOGnHEc4tENi', 'manager@center.com', 'Trần Đào Tạo', 'img/default.jpg', 'active', '2025-12-01 04:33:16'),
-(3, 3, 2, 'ketoan', '$2y$10$1tzcfBb3Y1Z3dUIdd4eE2esR25Z4ARIVv2zLvJ8VMZOGnHEc4tENi', 'acc@center.com', 'Lê Kế Toán', 'img/default.jpg', 'active', '2025-12-01 04:33:16'),
+(3, 3, 2, 'ketoan', '$2y$10$1tzcfBb3Y1Z3dUIdd4eE2esR25Z4ARIVv2zLvJ8VMZOGnHEc4tENi', 'acc@center.com', 'Lê Kế Toán', 'img/proofs/1764609337_avt_[520x270-cr]thongbao.png', 'active', '2025-12-01 04:33:16'),
 (4, 4, NULL, 'teacher_native', '$2y$10$1tzcfBb3Y1Z3dUIdd4eE2esR25Z4ARIVv2zLvJ8VMZOGnHEc4tENi', 'teacher1@center.com', 'Mr. David Beck', 'img/default.jpg', 'active', '2025-12-01 04:33:16'),
 (5, 4, 3, 'teacher_vn', '$2y$10$1tzcfBb3Y1Z3dUIdd4eE2esR25Z4ARIVv2zLvJ8VMZOGnHEc4tENi', 'teacher2@center.com', 'Cô Mai Anh', 'img/default.jpg', 'active', '2025-12-01 04:33:16'),
 (6, 5, 4, 'sale_staff', '$2y$10$1tzcfBb3Y1Z3dUIdd4eE2esR25Z4ARIVv2zLvJ8VMZOGnHEc4tENi', 'sale@center.com', 'Nguyễn Văn Sale', 'img/default.jpg', 'active', '2025-12-01 04:33:16'),
@@ -843,7 +865,7 @@ ALTER TABLE `certificates`
 -- AUTO_INCREMENT cho bảng `classes`
 --
 ALTER TABLE `classes`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT cho bảng `departments`
@@ -873,7 +895,7 @@ ALTER TABLE `labor_contracts`
 -- AUTO_INCREMENT cho bảng `leads`
 --
 ALTER TABLE `leads`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT cho bảng `leave_requests`
@@ -915,7 +937,7 @@ ALTER TABLE `permissions`
 -- AUTO_INCREMENT cho bảng `profile_requests`
 --
 ALTER TABLE `profile_requests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT cho bảng `roles`
