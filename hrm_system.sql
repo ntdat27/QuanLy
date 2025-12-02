@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Máy chủ: 127.0.0.1
--- Thời gian đã tạo: Th12 01, 2025 lúc 08:00 PM
+-- Thời gian đã tạo: Th12 02, 2025 lúc 02:03 AM
 -- Phiên bản máy phục vụ: 10.4.32-MariaDB
 -- Phiên bản PHP: 8.1.25
 
@@ -97,6 +97,43 @@ INSERT INTO `classes` (`id`, `class_name`, `schedule`, `room`, `teacher_id`, `st
 (3, 'IELTS Speaking Master', 'Thứ 3 - Thứ 5 (19:30 - 21:00)', 'Phòng 202', 5, 12),
 (4, 'Intensive Writing', 'Thứ 7 - CN (09:00 - 11:00)', 'Phòng Online Zoom', 4, 20),
 (5, 'Giao tiếp nâng cao', 'Thứ 2 - Thứ 6 (18:00 - 19:30)', 'Phòng 305', 4, 8);
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `class_enrollments`
+--
+
+CREATE TABLE `class_enrollments` (
+  `id` int(11) NOT NULL,
+  `class_id` int(11) NOT NULL,
+  `student_id` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `class_enrollments`
+--
+
+INSERT INTO `class_enrollments` (`id`, `class_id`, `student_id`) VALUES
+(1, 1, 1),
+(2, 1, 2),
+(3, 1, 3),
+(4, 2, 2),
+(5, 2, 3);
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `class_logs`
+--
+
+CREATE TABLE `class_logs` (
+  `id` int(11) NOT NULL,
+  `class_id` int(11) NOT NULL,
+  `teacher_id` int(11) NOT NULL,
+  `check_in_time` datetime NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -595,7 +632,10 @@ INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES
 (5, 10),
 (5, 11),
 (5, 12),
-(5, 21);
+(5, 21),
+(6, 10),
+(6, 11),
+(6, 12);
 
 -- --------------------------------------------------------
 
@@ -627,6 +667,45 @@ INSERT INTO `settings` (`id`, `setting_key`, `setting_value`, `setting_name`) VA
 (10, 'allowance_ielts_7', '1000000', 'IELTS 7.0+'),
 (11, 'allowance_ielts_8', '2000000', 'IELTS 8.0+'),
 (12, 'standard_work_days', '26', 'Số công chuẩn');
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `students`
+--
+
+CREATE TABLE `students` (
+  `id` int(11) NOT NULL,
+  `full_name` varchar(100) NOT NULL,
+  `phone` varchar(20) DEFAULT NULL,
+  `email` varchar(100) DEFAULT NULL,
+  `dob` date DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `students`
+--
+
+INSERT INTO `students` (`id`, `full_name`, `phone`, `email`, `dob`) VALUES
+(1, 'Nguyễn Văn An', '090111222', NULL, NULL),
+(2, 'Trần Thị B', '090333444', NULL, NULL),
+(3, 'Lê Văn C', '090555666', NULL, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `student_attendance`
+--
+
+CREATE TABLE `student_attendance` (
+  `id` int(11) NOT NULL,
+  `class_id` int(11) NOT NULL,
+  `student_id` int(11) NOT NULL,
+  `date` date NOT NULL,
+  `status` enum('present','absent','late') DEFAULT 'present',
+  `note` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -715,6 +794,22 @@ ALTER TABLE `certificates`
 --
 ALTER TABLE `classes`
   ADD PRIMARY KEY (`id`),
+  ADD KEY `teacher_id` (`teacher_id`);
+
+--
+-- Chỉ mục cho bảng `class_enrollments`
+--
+ALTER TABLE `class_enrollments`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `class_id` (`class_id`),
+  ADD KEY `student_id` (`student_id`);
+
+--
+-- Chỉ mục cho bảng `class_logs`
+--
+ALTER TABLE `class_logs`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `class_id` (`class_id`),
   ADD KEY `teacher_id` (`teacher_id`);
 
 --
@@ -832,6 +927,18 @@ ALTER TABLE `settings`
   ADD UNIQUE KEY `setting_key` (`setting_key`);
 
 --
+-- Chỉ mục cho bảng `students`
+--
+ALTER TABLE `students`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Chỉ mục cho bảng `student_attendance`
+--
+ALTER TABLE `student_attendance`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Chỉ mục cho bảng `teaching_profile`
 --
 ALTER TABLE `teaching_profile`
@@ -868,6 +975,18 @@ ALTER TABLE `certificates`
 --
 ALTER TABLE `classes`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT cho bảng `class_enrollments`
+--
+ALTER TABLE `class_enrollments`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT cho bảng `class_logs`
+--
+ALTER TABLE `class_logs`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT cho bảng `departments`
@@ -954,6 +1073,18 @@ ALTER TABLE `settings`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
+-- AUTO_INCREMENT cho bảng `students`
+--
+ALTER TABLE `students`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- AUTO_INCREMENT cho bảng `student_attendance`
+--
+ALTER TABLE `student_attendance`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT cho bảng `users`
 --
 ALTER TABLE `users`
@@ -980,6 +1111,20 @@ ALTER TABLE `certificates`
 --
 ALTER TABLE `classes`
   ADD CONSTRAINT `classes_ibfk_1` FOREIGN KEY (`teacher_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Các ràng buộc cho bảng `class_enrollments`
+--
+ALTER TABLE `class_enrollments`
+  ADD CONSTRAINT `class_enrollments_ibfk_1` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `class_enrollments_ibfk_2` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE;
+
+--
+-- Các ràng buộc cho bảng `class_logs`
+--
+ALTER TABLE `class_logs`
+  ADD CONSTRAINT `class_logs_ibfk_1` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `class_logs_ibfk_2` FOREIGN KEY (`teacher_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Các ràng buộc cho bảng `emergency_contacts`
