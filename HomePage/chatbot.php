@@ -1,5 +1,5 @@
 <?php
-// Tắt hiển thị lỗi để tránh hỏng JSON
+// Tắt hiển thị lỗi
 error_reporting(0);
 ini_set('display_errors', 0);
 
@@ -8,9 +8,20 @@ header('Content-Type: application/json; charset=utf-8');
 // 1. KẾT NỐI DATABASE
 require_once 'db_connect.php';
 
-// 2. CẤU HÌNH API KEY
-// (Dùng lại key hiện tại của bạn, nó vẫn sống tốt, chỉ là model cũ bị cấm thôi)
-$apiKey = "AIzaSyDvEfJmsatd5kGTYqe0rUdkXiQ7F5l12h4"; 
+// 2. KẾT NỐI FILE CẤU HÌNH (Để lấy API Key an toàn)
+// Kiểm tra xem file env.php có tồn tại không
+if (file_exists('env.php')) {
+    require_once 'env.php';
+} else {
+    // Trường hợp lỡ quên tạo file env.php
+    echo json_encode(['reply' => 'Lỗi hệ thống: Thiếu file cấu hình môi trường (env.php).']);
+    exit;
+}
+
+// Lấy Key từ hằng số đã định nghĩa bên kia
+$apiKey = GEMINI_API_KEY; 
+
+// ... (Phần code bên dưới giữ nguyên không đổi) ...
 
 // Nhận dữ liệu từ khách
 $inputJSON = file_get_contents('php://input');
