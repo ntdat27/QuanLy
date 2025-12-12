@@ -88,7 +88,7 @@ if (!empty($search)) {
     $sql .= " AND (u.full_name LIKE '%$search%' OR u.email LIKE '%$search%')";
 }
 
-// Điều kiện lọc phòng ban (Mới thêm)
+// Điều kiện lọc phòng ban 
 if (!empty($dept_filter)) {
     $sql .= " AND u.department_id = " . intval($dept_filter);
 }
