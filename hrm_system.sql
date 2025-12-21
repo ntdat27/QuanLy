@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Máy chủ: 127.0.0.1
--- Thời gian đã tạo: Th12 02, 2025 lúc 02:03 AM
+-- Thời gian đã tạo: Th12 19, 2025 lúc 03:44 PM
 -- Phiên bản máy phục vụ: 10.4.32-MariaDB
 -- Phiên bản PHP: 8.1.25
 
@@ -330,7 +330,8 @@ INSERT INTO `labor_contracts` (`id`, `user_id`, `contract_number`, `contract_typ
 (7, 14, 'HD014', 'Chính thức', '2025-09-15', '2026-09-15', 12000000, 0, 0, NULL, NULL, NULL, NULL, 1),
 (8, 15, 'HD015', 'Chính thức', '2025-09-15', '2026-09-15', 11000000, 0, 0, NULL, NULL, NULL, NULL, 1),
 (9, 16, 'HD016', 'Thử việc', '2025-11-01', '2026-01-01', 10000000, 0, 0, NULL, NULL, NULL, NULL, 1),
-(10, 17, 'HD017', 'Thử việc', '2025-11-01', '2026-01-01', 5500000, 0, 0, NULL, NULL, NULL, NULL, 1);
+(10, 17, 'HD017', 'Thử việc', '2025-11-01', '2026-01-01', 5500000, 0, 0, NULL, NULL, NULL, NULL, 1),
+(11, 17, 'KCJ231', 'Thử việc', '2025-12-09', '2026-01-06', 6000000, 300000, 0, NULL, NULL, NULL, '', 1);
 
 -- --------------------------------------------------------
 
@@ -381,7 +382,8 @@ CREATE TABLE `leave_requests` (
 --
 
 INSERT INTO `leave_requests` (`id`, `user_id`, `start_date`, `end_date`, `reason`, `status`, `created_at`) VALUES
-(1, 6, '2025-12-06', '2025-12-07', 'Về quê', 'pending', '2025-12-01 04:33:16');
+(1, 6, '2025-12-06', '2025-12-07', 'Về quê', 'pending', '2025-12-01 04:33:16'),
+(2, 3, '2025-12-04', '2026-01-01', 'Việc Gia Đình', 'pending', '2025-12-02 02:52:18');
 
 -- --------------------------------------------------------
 
@@ -559,7 +561,8 @@ INSERT INTO `profile_requests` (`id`, `user_id`, `type`, `data_content`, `status
 (4, 3, 'personal', '{\"full_name\":\"Lê Kế Toán\",\"email\":\"acc@center.com\",\"phone\":\"0902000222\",\"dob\":\"\",\"address\":\"Không\",\"gender\":\"Nam\",\"nationality\":\"Việt Nam\",\"marital_status\":\"Độc thân\",\"zalo\":\"\",\"current_address\":\"Ô diên hà NỘI\",\"hometown\":\"Haà Nội\",\"biography\":\"Kế toán viên chuyên nghiệp.\"}', 'approved', '2025-12-01 17:13:58'),
 (5, 3, 'teaching', '{\"education_level\":\"Đại học\",\"major\":\"Kế toán\",\"certificate_type\":\"None\",\"certificate_score\":\"700.0\",\"main_subject\":\"\",\"teaching_band\":\"\",\"demo_video_link\":\"\"}', 'rejected', '2025-12-01 17:14:30'),
 (6, 3, 'personal', '{\"full_name\":\"Lê Kế Toán\",\"email\":\"acc@center.com\",\"phone\":\"0902000222\",\"dob\":\"\",\"address\":\"\",\"gender\":\"Nam\",\"nationality\":\"Việt Nam\",\"marital_status\":\"Độc thân\",\"zalo\":\"\",\"current_address\":\"Ô diên hà NỘI\",\"hometown\":\"Haà Nội\",\"biography\":\"Kế toán viên chuyên nghiệp.\",\"avatar\":\"img\\/proofs\\/1764609292_avt_z7242676947454_e321b0abf1b5ceb643642e31ab1ec773.jpg\"}', 'approved', '2025-12-01 17:14:52'),
-(7, 3, 'personal', '{\"full_name\":\"Lê Kế Toán\",\"email\":\"acc@center.com\",\"phone\":\"0902000222\",\"dob\":\"\",\"address\":\"\",\"gender\":\"Nam\",\"nationality\":\"Việt Nam\",\"marital_status\":\"Độc thân\",\"zalo\":\"\",\"current_address\":\"Ô diên hà NỘI\",\"hometown\":\"Haà Nội\",\"biography\":\"Kế toán viên chuyên nghiệp.\",\"avatar\":\"img\\/proofs\\/1764609337_avt_[520x270-cr]thongbao.png\"}', 'approved', '2025-12-01 17:15:37');
+(7, 3, 'personal', '{\"full_name\":\"Lê Kế Toán\",\"email\":\"acc@center.com\",\"phone\":\"0902000222\",\"dob\":\"\",\"address\":\"\",\"gender\":\"Nam\",\"nationality\":\"Việt Nam\",\"marital_status\":\"Độc thân\",\"zalo\":\"\",\"current_address\":\"Ô diên hà NỘI\",\"hometown\":\"Haà Nội\",\"biography\":\"Kế toán viên chuyên nghiệp.\",\"avatar\":\"img\\/proofs\\/1764609337_avt_[520x270-cr]thongbao.png\"}', 'approved', '2025-12-01 17:15:37'),
+(8, 3, 'legal', '{\"doc_type\":\"CCCD\",\"doc_number\":\"001205024639\",\"issue_date\":\"2025-12-11\",\"expiry_date\":\"2026-10-02\",\"place_of_issue\":null,\"doc_file_front\":\"img\\/proofs\\/1764643923_doc_front_samsung.jpg\",\"doc_file_back\":\"img\\/proofs\\/1764643923_doc_back_samsung.jpg\"}', 'pending', '2025-12-02 02:52:03');
 
 -- --------------------------------------------------------
 
@@ -769,7 +772,7 @@ INSERT INTO `users` (`id`, `role_id`, `department_id`, `username`, `password`, `
 (14, 3, 2, 'kt_thu', '$2y$10$1tzcfBb3Y1Z3dUIdd4eE2esR25Z4ARIVv2zLvJ8VMZOGnHEc4tENi', 'thu.dang@center.com', 'Đặng Thị Thu', 'img/default.jpg', 'active', '2025-09-15 01:00:00'),
 (15, 6, 5, 'hr_long', '$2y$10$1tzcfBb3Y1Z3dUIdd4eE2esR25Z4ARIVv2zLvJ8VMZOGnHEc4tENi', 'long.bui@center.com', 'Bùi Văn Long', 'img/default.jpg', 'active', '2025-09-15 01:00:00'),
 (16, 4, 3, 'gv_hoa', '$2y$10$1tzcfBb3Y1Z3dUIdd4eE2esR25Z4ARIVv2zLvJ8VMZOGnHEc4tENi', 'hoa.do@center.com', 'Đỗ Thị Hoa', 'img/default.jpg', 'active', '2025-11-01 01:00:00'),
-(17, 5, 4, 'sale_quyen', '$2y$10$1tzcfBb3Y1Z3dUIdd4eE2esR25Z4ARIVv2zLvJ8VMZOGnHEc4tENi', 'quyen.ngo@center.com', 'Ngô Văn Quyền', 'img/default.jpg', 'active', '2025-11-01 01:00:00');
+(17, 5, 4, 'sale_quyen', '$2y$10$u3spw3qZ.th5LhrEVAVccuZU9xajiYOX7wAYb5tz3N5hUwX49S.Ue', 'quyen.ngo@center.com', 'Ngô Văn Quyền', 'img/default.jpg', 'active', '2025-11-01 01:00:00');
 
 --
 -- Chỉ mục cho các bảng đã đổ
@@ -1010,7 +1013,7 @@ ALTER TABLE `expenses`
 -- AUTO_INCREMENT cho bảng `labor_contracts`
 --
 ALTER TABLE `labor_contracts`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT cho bảng `leads`
@@ -1022,7 +1025,7 @@ ALTER TABLE `leads`
 -- AUTO_INCREMENT cho bảng `leave_requests`
 --
 ALTER TABLE `leave_requests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT cho bảng `legal_documents`
@@ -1058,7 +1061,7 @@ ALTER TABLE `permissions`
 -- AUTO_INCREMENT cho bảng `profile_requests`
 --
 ALTER TABLE `profile_requests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT cho bảng `roles`

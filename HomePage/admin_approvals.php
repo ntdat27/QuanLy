@@ -2,7 +2,7 @@
 session_start();
 require_once 'db_connect.php';
 
-// Check quyền: Phải là Admin HOẶC có quyền duyệt đơn (leave.approve hoặc approve.manage)
+// Check quyền: Phải là Admin HOẶC có quyền duyệt đơn
 if (!isset($_SESSION['user_id']) || (!hasPermission('leave.approve') && !hasPermission('approve.manage') && $_SESSION['role_id'] != 1)) {
     header("Location: index.php");
     exit();
@@ -39,51 +39,91 @@ if (isset($_POST['action_profile'])) {
                     $conn->query("UPDATE users SET full_name='{$data['full_name']}', email='{$data['email']}' WHERE id=$uid");
                     if(isset($data['avatar'])) $conn->query("UPDATE users SET avatar='{$data['avatar']}' WHERE id=$uid");
                 }
+                
+                // [FIX] Thêm ?? '' để tránh lỗi nếu JSON thiếu trường dữ liệu
+                $phone = $data['phone'] ?? '';
+                $dob = $data['dob'] ?? '';
+                $gender = $data['gender'] ?? '';
+                $nationality = $data['nationality'] ?? '';
+                $marital = $data['marital_status'] ?? '';
+                $zalo = $data['zalo'] ?? '';
+                $addr = $data['current_address'] ?? '';
+                $home = $data['hometown'] ?? '';
+                $bio = $data['biography'] ?? '';
+
                 $sql = "UPDATE employee_details SET phone=?, dob=?, gender=?, nationality=?, marital_status=?, zalo=?, current_address=?, hometown=?, biography=? WHERE user_id=?";
                 $stmt = $conn->prepare($sql);
-                $stmt->bind_param("sssssssssi", $data['phone'], $data['dob'], $data['gender'], $data['nationality'], $data['marital_status'], $data['zalo'], $data['current_address'], $data['hometown'], $data['biography'], $uid);
+                $stmt->bind_param("sssssssssi", $phone, $dob, $gender, $nationality, $marital, $zalo, $addr, $home, $bio, $uid);
                 $stmt->execute();
 
             } elseif ($type == 'teaching') {
-                // Cập nhật chuyên môn
+                // [FIX] Thêm ?? ''
+                $edu = $data['education_level'] ?? '';
+                $major = $data['major'] ?? '';
+                $c_type = $data['certificate_type'] ?? '';
+                $c_score = $data['certificate_score'] ?? 0;
+
                 $sql = "UPDATE employee_details SET education_level=?, major=?, certificate_type=?, certificate_score=? WHERE user_id=?";
                 $stmt = $conn->prepare($sql);
-                $stmt->bind_param("sssdi", $data['education_level'], $data['major'], $data['certificate_type'], $data['certificate_score'], $uid);
+                $stmt->bind_param("sssdi", $edu, $major, $c_type, $c_score, $uid);
                 $stmt->execute();
                 
                 if(isset($data['edu_proof'])) $conn->query("UPDATE employee_details SET edu_proof='{$data['edu_proof']}' WHERE user_id=$uid");
                 if(isset($data['cert_proof'])) $conn->query("UPDATE employee_details SET cert_proof='{$data['cert_proof']}' WHERE user_id=$uid");
 
+                // [FIX] Thêm ?? ''
+                $sub = $data['main_subject'] ?? '';
+                $band = $data['teaching_band'] ?? '';
+                $demo = $data['demo_video_link'] ?? '';
+
                 $check = $conn->query("SELECT user_id FROM teaching_profile WHERE user_id=$uid");
                 if($check->num_rows > 0) {
                     $stmt = $conn->prepare("UPDATE teaching_profile SET main_subject=?, teaching_band=?, demo_video_link=? WHERE user_id=?");
-                    $stmt->bind_param("sssi", $data['main_subject'], $data['teaching_band'], $data['demo_video_link'], $uid);
+                    $stmt->bind_param("sssi", $sub, $band, $demo, $uid);
                 } else {
                     $stmt = $conn->prepare("INSERT INTO teaching_profile (main_subject, teaching_band, demo_video_link, user_id) VALUES (?, ?, ?, ?)");
-                    $stmt->bind_param("sssi", $data['main_subject'], $data['teaching_band'], $data['demo_video_link'], $uid);
+                    $stmt->bind_param("sssi", $sub, $band, $demo, $uid);
                 }
                 $stmt->execute();
 
             } elseif ($type == 'legal') {
                 $stmt = $conn->prepare("INSERT INTO legal_documents (user_id, doc_type, doc_number, issue_date, expiry_date, place_of_issue, doc_file_front, doc_file_back) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-                $f = $data['doc_file_front'] ?? ''; $b = $data['doc_file_back'] ?? '';
-                $stmt->bind_param("isssssss", $uid, $data['doc_type'], $data['doc_number'], $data['issue_date'], $data['expiry_date'], $data['place_of_issue'], $f, $b);
+                $f = $data['doc_file_front'] ?? ''; 
+                $b = $data['doc_file_back'] ?? '';
+                $d_type = $data['doc_type'] ?? '';
+                $d_num = $data['doc_number'] ?? '';
+                $d_iss = $data['issue_date'] ?? '';
+                $d_exp = $data['expiry_date'] ?? '';
+                $d_place = $data['place_of_issue'] ?? '';
+                
+                $stmt->bind_param("isssssss", $uid, $d_type, $d_num, $d_iss, $d_exp, $d_place, $f, $b);
                 $stmt->execute();
 
             } elseif ($type == 'insurance') {
+                // [FIX] Thêm ?? ''
+                $s_stat = $data['social_status'] ?? '';
+                $s_book = $data['social_book_number'] ?? '';
+                $h_card = $data['health_card_number'] ?? '';
+                $h_reg = $data['hospital_reg'] ?? '';
+
                 $check = $conn->query("SELECT user_id FROM insurance WHERE user_id=$uid");
                 if($check->num_rows > 0) {
                     $stmt = $conn->prepare("UPDATE insurance SET social_status=?, social_book_number=?, health_card_number=?, hospital_reg=? WHERE user_id=?");
-                    $stmt->bind_param("ssssi", $data['social_status'], $data['social_book_number'], $data['health_card_number'], $data['hospital_reg'], $uid);
+                    $stmt->bind_param("ssssi", $s_stat, $s_book, $h_card, $h_reg, $uid);
                 } else {
                     $stmt = $conn->prepare("INSERT INTO insurance (social_status, social_book_number, health_card_number, hospital_reg, user_id) VALUES (?, ?, ?, ?, ?)");
-                    $stmt->bind_param("ssssi", $data['social_status'], $data['social_book_number'], $data['health_card_number'], $data['hospital_reg'], $uid);
+                    $stmt->bind_param("ssssi", $s_stat, $s_book, $h_card, $h_reg, $uid);
                 }
                 $stmt->execute();
 
             } elseif ($type == 'contact') {
+                $c_name = $data['name'] ?? '';
+                $c_rel = $data['relationship'] ?? '';
+                $c_phone = $data['phone'] ?? '';
+                $c_addr = $data['address'] ?? '';
+
                 $stmt = $conn->prepare("INSERT INTO emergency_contacts (user_id, name, relationship, phone, address) VALUES (?, ?, ?, ?, ?)");
-                $stmt->bind_param("issss", $uid, $data['name'], $data['relationship'], $data['phone'], $data['address']);
+                $stmt->bind_param("issss", $uid, $c_name, $c_rel, $c_phone, $c_addr);
                 $stmt->execute();
             }
 
@@ -150,13 +190,17 @@ $reqs = $conn->query("SELECT pr.*, u.full_name FROM profile_requests pr JOIN use
                             <div class="card-body">
                                 <div class="bg-light p-2 rounded mb-3 small font-monospace border">
                                     <?php 
-                                    foreach($data as $k => $v) {
-                                        if(strpos($k, 'img')===false && strpos($k, 'proof')===false && strpos($k, 'file')===false) 
-                                            echo "<strong>$k:</strong> $v<br>";
+                                    if(is_array($data)) {
+                                        foreach($data as $k => $v) {
+                                            if(strpos($k, 'img')===false && strpos($k, 'proof')===false && strpos($k, 'file')===false) 
+                                                echo "<strong>$k:</strong> $v<br>";
+                                        }
+                                        if(isset($data['avatar'])) echo "<span class='text-success'>[Có Ảnh đại diện mới]</span><br>";
+                                        if(isset($data['edu_proof'])) echo "<span class='text-success'>[Có Ảnh bằng cấp]</span><br>";
+                                        if(isset($data['doc_file_front'])) echo "<span class='text-success'>[Có Ảnh giấy tờ]</span><br>";
+                                    } else {
+                                        echo "Lỗi dữ liệu";
                                     }
-                                    if(isset($data['avatar'])) echo "<span class='text-success'>[Có Ảnh đại diện mới]</span><br>";
-                                    if(isset($data['edu_proof'])) echo "<span class='text-success'>[Có Ảnh bằng cấp]</span><br>";
-                                    if(isset($data['doc_file_front'])) echo "<span class='text-success'>[Có Ảnh giấy tờ]</span><br>";
                                     ?>
                                 </div>
                                 <div class="text-end">
