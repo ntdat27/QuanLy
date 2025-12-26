@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Máy chủ: 127.0.0.1
--- Thời gian đã tạo: Th12 19, 2025 lúc 03:44 PM
+-- Thời gian đã tạo: Th12 26, 2025 lúc 12:14 PM
 -- Phiên bản máy phục vụ: 10.4.32-MariaDB
 -- Phiên bản PHP: 8.1.25
 
@@ -55,7 +55,8 @@ INSERT INTO `attendance` (`id`, `user_id`, `date`, `check_in`, `check_out`, `sta
 (12, 16, '2025-12-01', '07:45:00', '16:45:00', 'present'),
 (13, 17, '2025-12-01', '08:00:00', '17:00:00', 'present'),
 (14, 8, '2025-12-02', '07:55:00', '17:05:00', 'present'),
-(15, 10, '2025-12-02', '08:00:00', '17:00:00', 'present');
+(15, 10, '2025-12-02', '08:00:00', '17:00:00', 'present'),
+(16, 1, '2025-12-26', '17:40:14', NULL, 'present');
 
 -- --------------------------------------------------------
 
@@ -96,7 +97,8 @@ INSERT INTO `classes` (`id`, `class_name`, `schedule`, `room`, `teacher_id`, `st
 (2, 'IELTS Foundation K14', 'Thứ 2 - Thứ 4 (18:00 - 19:30)', 'Phòng 101', 5, 15),
 (3, 'IELTS Speaking Master', 'Thứ 3 - Thứ 5 (19:30 - 21:00)', 'Phòng 202', 5, 12),
 (4, 'Intensive Writing', 'Thứ 7 - CN (09:00 - 11:00)', 'Phòng Online Zoom', 4, 20),
-(5, 'Giao tiếp nâng cao', 'Thứ 2 - Thứ 6 (18:00 - 19:30)', 'Phòng 305', 4, 8);
+(5, 'Giao tiếp nâng cao', 'Thứ 2 - Thứ 6 (18:00 - 19:30)', 'Phòng 305', 4, 8),
+(6, 'Han', 'Thứ 2 - Thứ 3', 'A912', 4, 10);
 
 -- --------------------------------------------------------
 
@@ -134,6 +136,15 @@ CREATE TABLE `class_logs` (
   `check_in_time` datetime NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `class_logs`
+--
+
+INSERT INTO `class_logs` (`id`, `class_id`, `teacher_id`, `check_in_time`, `created_at`) VALUES
+(1, 2, 1, '2025-12-26 17:40:14', '2025-12-26 10:40:14'),
+(2, 1, 1, '2025-12-26 17:40:17', '2025-12-26 10:40:17'),
+(3, 4, 1, '2025-12-26 17:40:22', '2025-12-26 10:40:22');
 
 -- --------------------------------------------------------
 
@@ -174,6 +185,15 @@ CREATE TABLE `emergency_contacts` (
   `phone` varchar(20) DEFAULT NULL,
   `address` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `emergency_contacts`
+--
+
+INSERT INTO `emergency_contacts` (`id`, `user_id`, `name`, `relationship`, `phone`, `address`) VALUES
+(1, 17, 'Ngô Văn Đa', 'Bố', '086275171', NULL),
+(2, 17, 'Ngô Văn Đa', 'Bố', '086275171', ''),
+(3, 17, 'Ngô Văn Đa', 'Bố', '086275171', '');
 
 -- --------------------------------------------------------
 
@@ -226,8 +246,11 @@ INSERT INTO `employee_details` (`user_id`, `phone`, `dob`, `gender`, `nationalit
 (13, '0912345683', '1994-11-11', 'Nam', 'Việt Nam', NULL, NULL, NULL, NULL, NULL, 'Đại học', NULL, 'TOEIC', 700.0, NULL, NULL, '2025-10-10', 'Full-time', NULL, 'Đang xác minh', NULL, NULL, NULL),
 (14, '0912345684', '1992-02-14', 'Nữ', 'Việt Nam', NULL, NULL, NULL, NULL, NULL, 'Đại học', NULL, 'None', 0.0, NULL, NULL, '2025-09-15', 'Full-time', NULL, 'Đang xác minh', NULL, NULL, NULL),
 (15, '0912345685', '1993-09-09', 'Nam', 'Việt Nam', NULL, NULL, NULL, NULL, NULL, 'Đại học', NULL, 'None', 0.0, NULL, NULL, '2025-09-15', 'Full-time', NULL, 'Đang xác minh', NULL, NULL, NULL),
-(16, '0912345686', '1999-06-01', 'Nữ', 'Việt Nam', NULL, NULL, NULL, NULL, NULL, 'Đại học', NULL, 'IELTS', 7.0, NULL, NULL, '2025-11-01', 'Full-time', NULL, 'Đang xác minh', NULL, NULL, NULL),
-(17, '0912345687', '1995-04-30', 'Nam', 'Việt Nam', NULL, NULL, NULL, NULL, NULL, 'Cao đẳng', NULL, 'None', 0.0, NULL, NULL, '2025-11-01', 'Full-time', NULL, 'Đang xác minh', NULL, NULL, NULL);
+(16, '0912345686', '1999-06-01', 'Nữ', 'Việt Nam', NULL, NULL, NULL, NULL, NULL, 'Đại học', '', 'TOEIC', 700.0, NULL, NULL, '2025-11-01', 'Full-time', NULL, 'Đang xác minh', NULL, NULL, NULL),
+(17, '0912345687', '1995-04-30', 'Nam', 'Việt Nam', 'Độc thân', NULL, 'Ô diên hà NỘI', 'Ha Noi', '0862751618', 'Đại học', 'Ngôn ngữ Anh', 'IELTS', 7.5, NULL, NULL, '2025-11-01', 'Full-time', NULL, 'Trong sạch', '123', '2025-12-17', 'img/docs/1766158121_crm_134000104441453127.jpg'),
+(18, '', '0000-00-00', 'Nam', 'Việt Nam', 'Độc thân', NULL, '', '', '', NULL, NULL, 'None', 0.0, NULL, NULL, '2025-12-26', 'Full-time', NULL, 'Đang xác minh', '', '0000-00-00', ''),
+(19, NULL, NULL, NULL, 'Việt Nam', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'None', 0.0, NULL, NULL, '2025-12-26', 'Full-time', NULL, 'Đang xác minh', NULL, NULL, NULL),
+(20, NULL, NULL, NULL, 'Việt Nam', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'None', 0.0, NULL, NULL, '2025-12-26', 'Full-time', NULL, 'Đang xác minh', NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -282,16 +305,16 @@ CREATE TABLE `insurance` (
 --
 
 INSERT INTO `insurance` (`user_id`, `social_status`, `social_book_number`, `health_card_number`, `hospital_reg`, `social_salary_base`, `commercial_pkg_name`, `commercial_contract_num`, `commercial_expiry`, `insurance_file`) VALUES
+(1, 'Có đóng', '7912345678', 'DN4791234567890', 'Bệnh viện Quận 1', 20000000, NULL, NULL, NULL, NULL),
 (8, 'Có đóng', 'BH008', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (9, 'Có đóng', 'BH009', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(10, 'Không đóng', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(11, 'Không đóng', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(12, 'Có đóng', 'BH012', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(13, 'Có đóng', 'BH013', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(10, 'Có đóng', '7912345679', 'DN4791234567891', 'Bệnh viện Đa khoa', 15000000, NULL, NULL, NULL, NULL),
+(11, 'Có đóng', '7912345680', 'DN4791234567892', 'Bệnh viện Thống Nhất', 8000000, NULL, NULL, NULL, NULL),
+(12, 'Không đóng', NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL),
+(13, 'Có đóng', '7912345681', 'DN4791234567893', 'Bệnh viện Chợ Rẫy', 12000000, NULL, NULL, NULL, NULL),
 (14, 'Có đóng', 'BH014', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (15, 'Có đóng', 'BH015', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(16, 'Không đóng', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(17, 'Không đóng', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+(17, 'Có đóng', '004562343414', '42343424261', '', 0, 'TF12', '', '2027-09-16', NULL);
 
 -- --------------------------------------------------------
 
@@ -330,8 +353,7 @@ INSERT INTO `labor_contracts` (`id`, `user_id`, `contract_number`, `contract_typ
 (7, 14, 'HD014', 'Chính thức', '2025-09-15', '2026-09-15', 12000000, 0, 0, NULL, NULL, NULL, NULL, 1),
 (8, 15, 'HD015', 'Chính thức', '2025-09-15', '2026-09-15', 11000000, 0, 0, NULL, NULL, NULL, NULL, 1),
 (9, 16, 'HD016', 'Thử việc', '2025-11-01', '2026-01-01', 10000000, 0, 0, NULL, NULL, NULL, NULL, 1),
-(10, 17, 'HD017', 'Thử việc', '2025-11-01', '2026-01-01', 5500000, 0, 0, NULL, NULL, NULL, NULL, 1),
-(11, 17, 'KCJ231', 'Thử việc', '2025-12-09', '2026-01-06', 6000000, 300000, 0, NULL, NULL, NULL, '', 1);
+(10, 17, 'HD017', 'Thử việc', '2025-11-01', '2026-01-01', 5500000, 0, 0, NULL, NULL, NULL, NULL, 1);
 
 -- --------------------------------------------------------
 
@@ -402,6 +424,14 @@ CREATE TABLE `legal_documents` (
   `doc_file_front` varchar(255) DEFAULT NULL,
   `doc_file_back` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `legal_documents`
+--
+
+INSERT INTO `legal_documents` (`id`, `user_id`, `doc_type`, `doc_number`, `issue_date`, `place_of_issue`, `expiry_date`, `doc_file_front`, `doc_file_back`) VALUES
+(2, 17, 'CCCD', '001205024639', NULL, NULL, '2025-12-10', '', ''),
+(4, 16, 'CCCD', '001205024639', NULL, NULL, '2028-10-25', '', '');
 
 -- --------------------------------------------------------
 
@@ -562,7 +592,11 @@ INSERT INTO `profile_requests` (`id`, `user_id`, `type`, `data_content`, `status
 (5, 3, 'teaching', '{\"education_level\":\"Đại học\",\"major\":\"Kế toán\",\"certificate_type\":\"None\",\"certificate_score\":\"700.0\",\"main_subject\":\"\",\"teaching_band\":\"\",\"demo_video_link\":\"\"}', 'rejected', '2025-12-01 17:14:30'),
 (6, 3, 'personal', '{\"full_name\":\"Lê Kế Toán\",\"email\":\"acc@center.com\",\"phone\":\"0902000222\",\"dob\":\"\",\"address\":\"\",\"gender\":\"Nam\",\"nationality\":\"Việt Nam\",\"marital_status\":\"Độc thân\",\"zalo\":\"\",\"current_address\":\"Ô diên hà NỘI\",\"hometown\":\"Haà Nội\",\"biography\":\"Kế toán viên chuyên nghiệp.\",\"avatar\":\"img\\/proofs\\/1764609292_avt_z7242676947454_e321b0abf1b5ceb643642e31ab1ec773.jpg\"}', 'approved', '2025-12-01 17:14:52'),
 (7, 3, 'personal', '{\"full_name\":\"Lê Kế Toán\",\"email\":\"acc@center.com\",\"phone\":\"0902000222\",\"dob\":\"\",\"address\":\"\",\"gender\":\"Nam\",\"nationality\":\"Việt Nam\",\"marital_status\":\"Độc thân\",\"zalo\":\"\",\"current_address\":\"Ô diên hà NỘI\",\"hometown\":\"Haà Nội\",\"biography\":\"Kế toán viên chuyên nghiệp.\",\"avatar\":\"img\\/proofs\\/1764609337_avt_[520x270-cr]thongbao.png\"}', 'approved', '2025-12-01 17:15:37'),
-(8, 3, 'legal', '{\"doc_type\":\"CCCD\",\"doc_number\":\"001205024639\",\"issue_date\":\"2025-12-11\",\"expiry_date\":\"2026-10-02\",\"place_of_issue\":null,\"doc_file_front\":\"img\\/proofs\\/1764643923_doc_front_samsung.jpg\",\"doc_file_back\":\"img\\/proofs\\/1764643923_doc_back_samsung.jpg\"}', 'pending', '2025-12-02 02:52:03');
+(8, 3, 'legal', '{\"doc_type\":\"CCCD\",\"doc_number\":\"001205024639\",\"issue_date\":\"2025-12-11\",\"expiry_date\":\"2026-10-02\",\"place_of_issue\":null,\"doc_file_front\":\"img\\/proofs\\/1764643923_doc_front_samsung.jpg\",\"doc_file_back\":\"img\\/proofs\\/1764643923_doc_back_samsung.jpg\"}', 'pending', '2025-12-02 02:52:03'),
+(9, 3, 'legal', '{\"doc_type\":\"CCCD\",\"doc_number\":\"001205024639\",\"issue_date\":\"2025-12-20\",\"expiry_date\":\"2025-12-31\",\"place_of_issue\":null,\"doc_file_front\":\"img\\/proofs\\/1766156189_doc_front_134015509315998582.jpg\",\"doc_file_back\":\"img\\/proofs\\/1766156189_doc_back_134000104498710027.jpg\"}', 'pending', '2025-12-19 14:56:29'),
+(10, 3, 'legal', '{\"doc_type\":\"CCCD\",\"doc_number\":\"001205024639\",\"issue_date\":\"2025-12-20\",\"expiry_date\":\"2025-12-31\",\"place_of_issue\":null,\"doc_file_front\":\"img\\/proofs\\/1766156214_doc_front_134015509315998582.jpg\",\"doc_file_back\":\"img\\/proofs\\/1766156214_doc_back_134000104498710027.jpg\"}', 'pending', '2025-12-19 14:56:54'),
+(11, 3, 'legal', '{\"doc_type\":\"CCCD\",\"doc_number\":\"001205024639\",\"issue_date\":\"2025-12-19\",\"expiry_date\":\"2025-12-31\",\"place_of_issue\":null,\"doc_file_front\":\"img\\/proofs\\/1766348583_doc_front_134000104441453127.jpg\",\"doc_file_back\":\"img\\/proofs\\/1766348583_doc_back_134015509315998582.jpg\"}', 'pending', '2025-12-21 20:23:03'),
+(12, 3, 'legal', '{\"doc_type\":\"CCCD\",\"doc_number\":\"001205024639\",\"issue_date\":\"2025-12-19\",\"place_of_issue\":\"\",\"expiry_date\":\"2025-12-31\"}', 'pending', '2025-12-21 20:25:22');
 
 -- --------------------------------------------------------
 
@@ -710,6 +744,17 @@ CREATE TABLE `student_attendance` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Đang đổ dữ liệu cho bảng `student_attendance`
+--
+
+INSERT INTO `student_attendance` (`id`, `class_id`, `student_id`, `date`, `status`, `note`, `created_at`) VALUES
+(1, 2, 2, '2025-12-26', 'late', NULL, '2025-12-26 10:40:14'),
+(2, 2, 3, '2025-12-26', 'absent', NULL, '2025-12-26 10:40:14'),
+(3, 1, 1, '2025-12-26', 'present', NULL, '2025-12-26 10:40:17'),
+(4, 1, 2, '2025-12-26', 'present', NULL, '2025-12-26 10:40:17'),
+(5, 1, 3, '2025-12-26', 'present', NULL, '2025-12-26 10:40:17');
+
 -- --------------------------------------------------------
 
 --
@@ -720,17 +765,21 @@ CREATE TABLE `teaching_profile` (
   `user_id` int(11) NOT NULL,
   `main_subject` varchar(100) DEFAULT NULL,
   `teaching_band` varchar(100) DEFAULT NULL,
-  `demo_video_link` text DEFAULT NULL
+  `demo_video_link` text DEFAULT NULL,
+  `sales_target` decimal(15,0) DEFAULT 0,
+  `portfolio_link` varchar(255) DEFAULT NULL,
+  `skills` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Đang đổ dữ liệu cho bảng `teaching_profile`
 --
 
-INSERT INTO `teaching_profile` (`user_id`, `main_subject`, `teaching_band`, `demo_video_link`) VALUES
-(8, 'Speaking & Writing', '6.5+', 'youtube.com/demo8'),
-(9, 'Listening & Reading', '7.5+', 'youtube.com/demo9'),
-(16, 'General English', '5.5+', 'youtube.com/demo16');
+INSERT INTO `teaching_profile` (`user_id`, `main_subject`, `teaching_band`, `demo_video_link`, `sales_target`, `portfolio_link`, `skills`) VALUES
+(8, 'Speaking & Writing', '6.5+', 'youtube.com/demo8', 0, NULL, NULL),
+(9, 'Listening & Reading', '7.5+', 'youtube.com/demo9', 0, NULL, NULL),
+(16, 'General English', '5.5+', 'youtube.com/demo16', 0, NULL, NULL),
+(17, 'Tiếng Anh', '7.0-8.5', 'khong co', 0, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -772,7 +821,10 @@ INSERT INTO `users` (`id`, `role_id`, `department_id`, `username`, `password`, `
 (14, 3, 2, 'kt_thu', '$2y$10$1tzcfBb3Y1Z3dUIdd4eE2esR25Z4ARIVv2zLvJ8VMZOGnHEc4tENi', 'thu.dang@center.com', 'Đặng Thị Thu', 'img/default.jpg', 'active', '2025-09-15 01:00:00'),
 (15, 6, 5, 'hr_long', '$2y$10$1tzcfBb3Y1Z3dUIdd4eE2esR25Z4ARIVv2zLvJ8VMZOGnHEc4tENi', 'long.bui@center.com', 'Bùi Văn Long', 'img/default.jpg', 'active', '2025-09-15 01:00:00'),
 (16, 4, 3, 'gv_hoa', '$2y$10$1tzcfBb3Y1Z3dUIdd4eE2esR25Z4ARIVv2zLvJ8VMZOGnHEc4tENi', 'hoa.do@center.com', 'Đỗ Thị Hoa', 'img/default.jpg', 'active', '2025-11-01 01:00:00'),
-(17, 5, 4, 'sale_quyen', '$2y$10$u3spw3qZ.th5LhrEVAVccuZU9xajiYOX7wAYb5tz3N5hUwX49S.Ue', 'quyen.ngo@center.com', 'Ngô Văn Quyền', 'img/default.jpg', 'active', '2025-11-01 01:00:00');
+(17, 6, 4, 'sale_quyen', '$2y$10$u3spw3qZ.th5LhrEVAVccuZU9xajiYOX7wAYb5tz3N5hUwX49S.Ue', 'quyen.ngo@center.com', 'Ngô Văn Quyền', 'img/default.jpg', 'active', '2025-11-01 01:00:00'),
+(18, 5, NULL, 'sale', '$2y$10$WG3TlnViqX6SV/ay2qHbMuLUnw2uHe0FPBZe9bChtIUFY3iEN5l8W', 'khongcodau@gmail.com', 'Nguyễn Thị Sale', 'img/default.jpg', 'active', '2025-12-26 11:07:26'),
+(19, 4, NULL, 'sale123123', '$2y$10$19WTZxI/vy75E32Hxa90ouojQOsmV5lW253P15UenJVcptgjJpFOu', 'khongcoda2u@gmail.com', 'Nguyễn Thị Sale', 'img/default.jpg', 'active', '2025-12-26 11:10:59'),
+(20, 6, NULL, 'sale2', '$2y$10$.23DEnLRb8Wj4XkUORlPxeR.KZLO3NpGJUpM62EgKAkTrAGW4lsgW', 'khongcodau2@gmail.com', 'delete', 'img/default.jpg', 'active', '2025-12-26 11:13:53');
 
 --
 -- Chỉ mục cho các bảng đã đổ
@@ -965,7 +1017,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT cho bảng `attendance`
 --
 ALTER TABLE `attendance`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT cho bảng `certificates`
@@ -977,7 +1029,7 @@ ALTER TABLE `certificates`
 -- AUTO_INCREMENT cho bảng `classes`
 --
 ALTER TABLE `classes`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT cho bảng `class_enrollments`
@@ -989,7 +1041,7 @@ ALTER TABLE `class_enrollments`
 -- AUTO_INCREMENT cho bảng `class_logs`
 --
 ALTER TABLE `class_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT cho bảng `departments`
@@ -1001,7 +1053,7 @@ ALTER TABLE `departments`
 -- AUTO_INCREMENT cho bảng `emergency_contacts`
 --
 ALTER TABLE `emergency_contacts`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT cho bảng `expenses`
@@ -1013,7 +1065,7 @@ ALTER TABLE `expenses`
 -- AUTO_INCREMENT cho bảng `labor_contracts`
 --
 ALTER TABLE `labor_contracts`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT cho bảng `leads`
@@ -1031,7 +1083,7 @@ ALTER TABLE `leave_requests`
 -- AUTO_INCREMENT cho bảng `legal_documents`
 --
 ALTER TABLE `legal_documents`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT cho bảng `news`
@@ -1061,7 +1113,7 @@ ALTER TABLE `permissions`
 -- AUTO_INCREMENT cho bảng `profile_requests`
 --
 ALTER TABLE `profile_requests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT cho bảng `roles`
@@ -1085,13 +1137,13 @@ ALTER TABLE `students`
 -- AUTO_INCREMENT cho bảng `student_attendance`
 --
 ALTER TABLE `student_attendance`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT cho bảng `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- Các ràng buộc cho các bảng đã đổ

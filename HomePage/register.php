@@ -10,9 +10,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $password = $_POST["password"];
     $confirm_password = $_POST["confirm_password"];
     
-    // Mặc định đăng ký là Staff (ID = 4 trong bảng roles)
-    // Bạn có thể đổi thành 3 nếu muốn mặc định là Teacher
-    $role_id = 4; 
+    // --- SỬA Ở ĐÂY ---
+    // Đổi ID từ 4 (Giáo viên) sang 6 (Nhân viên)
+    $role_id = 6; 
 
     if ($password !== $confirm_password) {
         $message = "<div class='alert alert-danger'>Mật khẩu xác nhận không khớp!</div>";

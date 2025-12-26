@@ -2,259 +2,317 @@
 session_start();
 require_once 'db_connect.php';
 
-// Check quyền
-if (!isset($_SESSION['user_id']) || !hasPermission('class.view')) {
+// Kiểm tra quyền: Chỉ Giáo viên (4) hoặc Admin (1,2) mới được vào
+if (!isset($_SESSION['user_id']) || ($_SESSION['role_id'] != 4 && $_SESSION['role_id'] != 1 && $_SESSION['role_id'] != 2)) {
     header("Location: index.php");
     exit();
 }
 
-$uid = $_SESSION['user_id'];
-$role_id = $_SESSION['role_id']; 
-$message = "";
-$can_manage_class = ($role_id == 1 || $role_id == 2 || hasPermission('class.manage'));
+$user_id = $_SESSION['user_id'];
+$role_id = $_SESSION['role_id'];
+$msg = "";
 
-// --- XỬ LÝ 1: LƯU ĐIỂM DANH (HỌC VIÊN + GIÁO VIÊN) ---
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_attendance'])) {
-    $class_id = $_POST['class_id'];
-    $student_statuses = $_POST['status'] ?? []; // Mảng trạng thái của học viên
-    $teacher_id = $_SESSION['user_id'];
-    $today = date('Y-m-d');
-    $now = date('H:i:s');
+// --- 1. XỬ LÝ: TẠO LỚP HỌC MỚI (Chỉ Admin/Manager) ---
+if (isset($_POST['create_class']) && ($role_id == 1 || $role_id == 2)) {
+    $class_name = trim($_POST['class_name']);
+    $teacher_id_assign = $_POST['teacher_id'];
+    $schedule = trim($_POST['schedule']);
+    $room = trim($_POST['room']);
 
-    // 1. Lưu điểm danh học viên
-    foreach ($student_statuses as $student_id => $st_val) {
-        // Xóa cũ nếu có để tránh trùng lặp ngày hôm nay
-        $conn->query("DELETE FROM student_attendance WHERE class_id=$class_id AND student_id=$student_id AND date='$today'");
+    if (!empty($class_name) && !empty($schedule)) {
+        $stmt = $conn->prepare("INSERT INTO classes (class_name, teacher_id, schedule, room, student_count) VALUES (?, ?, ?, ?, 0)");
+        $stmt->bind_param("siss", $class_name, $teacher_id_assign, $schedule, $room);
         
-        // Thêm mới
-        $stmt = $conn->prepare("INSERT INTO student_attendance (class_id, student_id, date, status) VALUES (?, ?, ?, ?)");
-        $stmt->bind_param("iiss", $class_id, $student_id, $today, $st_val);
-        $stmt->execute();
+        if ($stmt->execute()) {
+            $msg = "<div class='alert alert-success alert-dismissible fade show'>Đã tạo lớp <b>$class_name</b> thành công! <button type='button' class='btn-close' data-bs-dismiss='alert'></button></div>";
+        } else {
+            $msg = "<div class='alert alert-danger'>Lỗi: " . $conn->error . "</div>";
+        }
     }
+}
 
-    // 2. Lưu lịch sử dạy (Class Logs)
-    // Kiểm tra xem đã log chưa để tránh spam
-    $check_log = $conn->query("SELECT id FROM class_logs WHERE class_id=$class_id AND DATE(check_in_time)='$today'");
-    if ($check_log->num_rows == 0) {
-        $stmt_log = $conn->prepare("INSERT INTO class_logs (class_id, teacher_id, check_in_time) VALUES (?, ?, NOW())");
-        $stmt_log->bind_param("ii", $class_id, $teacher_id);
-        $stmt_log->execute();
-    }
+// --- 2. XỬ LÝ: THÊM HỌC VIÊN VÀO LỚP ---
+if (isset($_POST['add_student_to_class'])) {
+    $class_id_add = $_POST['class_id'];
+    $full_name = trim($_POST['full_name']);
+    $phone = trim($_POST['phone']);
+    $email = trim($_POST['email']);
+    
+    // Kiểm tra học viên tồn tại chưa
+    $check_student = $conn->prepare("SELECT id FROM students WHERE phone = ?");
+    $check_student->bind_param("s", $phone);
+    $check_student->execute();
+    $res_student = $check_student->get_result();
 
-    // 3. TỰ ĐỘNG CHẤM CÔNG GIÁO VIÊN (Nếu chưa có)
-    $check_att = $conn->query("SELECT id FROM attendance WHERE user_id=$teacher_id AND date='$today'");
-    if ($check_att->num_rows == 0) {
-        $stmt_att = $conn->prepare("INSERT INTO attendance (user_id, date, check_in, status) VALUES (?, ?, ?, 'present')");
-        $stmt_att->bind_param("iss", $teacher_id, $today, $now);
-        $stmt_att->execute();
-        $message = "<div class='alert alert-success'>Đã lưu điểm danh lớp & Tự động chấm công cho bạn!</div>";
+    if ($res_student->num_rows > 0) {
+        $st_data = $res_student->fetch_assoc();
+        $student_id = $st_data['id'];
     } else {
-        $message = "<div class='alert alert-success'>Đã cập nhật điểm danh lớp học!</div>";
+        $stmt_new = $conn->prepare("INSERT INTO students (full_name, phone, email) VALUES (?, ?, ?)");
+        $stmt_new->bind_param("sss", $full_name, $phone, $email);
+        $stmt_new->execute();
+        $student_id = $conn->insert_id;
+    }
+
+    if ($student_id > 0) {
+        // Kiểm tra đã vào lớp chưa
+        $check_enroll = $conn->query("SELECT id FROM class_enrollments WHERE class_id = $class_id_add AND student_id = $student_id");
+        if ($check_enroll->num_rows == 0) {
+            $conn->query("INSERT INTO class_enrollments (class_id, student_id) VALUES ($class_id_add, $student_id)");
+            // Không cần update cột student_count thủ công nữa, vì ta sẽ đếm trực tiếp khi hiển thị
+            $msg = "<div class='alert alert-success alert-dismissible fade show'>Đã thêm <b>$full_name</b> vào lớp! <button type='button' class='btn-close' data-bs-dismiss='alert'></button></div>";
+        } else {
+            $msg = "<div class='alert alert-warning alert-dismissible fade show'>Học viên này đã có trong lớp rồi! <button type='button' class='btn-close' data-bs-dismiss='alert'></button></div>";
+        }
     }
 }
 
-// --- XỬ LÝ 2: THÊM LỚP MỚI (Admin) ---
-if (isset($_POST['add_class']) && $can_manage_class) {
-    $class_name = $_POST['class_name'];
-    $schedule = $_POST['schedule'];
-    $room = $_POST['room'];
-    $tid = $_POST['teacher_id'];
-    $count = $_POST['student_count'];
-    $conn->query("INSERT INTO classes (class_name, schedule, room, teacher_id, student_count) VALUES ('$class_name', '$schedule', '$room', $tid, $count)");
-    $message = "<div class='alert alert-success'>Đã thêm lớp mới!</div>";
+// --- 3. XỬ LÝ: XÓA HỌC VIÊN KHỎI LỚP ---
+if (isset($_GET['remove_student']) && isset($_GET['class_id'])) {
+    $sid = $_GET['remove_student'];
+    $cid = $_GET['class_id'];
+    $conn->query("DELETE FROM class_enrollments WHERE student_id = $sid AND class_id = $cid");
+    header("Location: teacher_classes.php?msg=removed");
+    exit();
 }
 
-// --- LẤY DỮ LIỆU ---
-// 1. Danh sách lớp
+if (isset($_GET['msg']) && $_GET['msg'] == 'removed') {
+    $msg = "<div class='alert alert-success'>Đã xóa học viên khỏi lớp.</div>";
+}
+
+// --- 4. LẤY DANH SÁCH LỚP HỌC (QUERY SỬA LỖI SĨ SỐ) ---
+// Thay vì lấy cột `student_count` có sẵn (dễ sai), ta dùng sub-query COUNT trực tiếp từ bảng enrollment
 if ($role_id == 1 || $role_id == 2) {
-    $sql = "SELECT c.*, u.full_name as teacher_name FROM classes c LEFT JOIN users u ON c.teacher_id = u.id ORDER BY c.id DESC";
+    // Admin: Xem hết
+    $sql = "SELECT c.*, u.full_name as teacher_name,
+            (SELECT COUNT(*) FROM class_enrollments ce WHERE ce.class_id = c.id) as real_student_count 
+            FROM classes c 
+            LEFT JOIN users u ON c.teacher_id = u.id 
+            ORDER BY c.id DESC";
 } else {
-    $sql = "SELECT *, 'Tôi' as teacher_name FROM classes WHERE teacher_id = $uid ORDER BY id DESC";
+    // Giáo viên: Xem lớp mình dạy
+    $sql = "SELECT c.*, u.full_name as teacher_name,
+            (SELECT COUNT(*) FROM class_enrollments ce WHERE ce.class_id = c.id) as real_student_count 
+            FROM classes c 
+            JOIN users u ON c.teacher_id = u.id 
+            WHERE c.teacher_id = $user_id 
+            ORDER BY c.id DESC";
 }
 $classes = $conn->query($sql);
 
-// 2. Danh sách Giáo viên (cho Admin)
-$teachers_list = [];
-if ($can_manage_class) {
-    $res = $conn->query("SELECT id, full_name FROM users WHERE role_id = 4 AND status='active'");
-    while($r = $res->fetch_assoc()) $teachers_list[] = $r;
-}
+// Lấy danh sách giáo viên (để Admin chọn khi tạo lớp)
+$teachers = $conn->query("SELECT id, full_name FROM users WHERE role_id = 4");
 ?>
 
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Quản lý Lớp & Điểm danh</title>
+    <title>Quản lý Lớp học</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <style>
-        .card-class { border-left: 5px solid #0d6efd; transition: 0.3s; }
-        .card-class:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
-        .modal-body { max-height: 70vh; overflow-y: auto; }
-    </style>
 </head>
 <body class="bg-light">
     <div class="container mt-5 mb-5">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h3><i class="fas fa-chalkboard-teacher text-primary"></i> Quản lý Lớp & Điểm danh</h3>
+            <h3><i class="fas fa-chalkboard-teacher text-primary"></i> Quản lý Lớp học</h3>
             <div>
-                <?php if ($can_manage_class): ?>
-                    <button class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#addClassModal"><i class="fas fa-plus"></i> Thêm Lớp</button>
+                <?php if($role_id == 1 || $role_id == 2): ?>
+                    <button class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#createClassModal">
+                        <i class="fas fa-plus-square"></i> Tạo Lớp Mới
+                    </button>
                 <?php endif; ?>
-                <a href="user_dashboard.php" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Quay lại</a>
+                <a href="user_dashboard.php" class="btn btn-secondary">Quay lại</a>
             </div>
         </div>
 
-        <?php echo $message; ?>
+        <?php echo $msg; ?>
 
-        <div class="row g-4">
-            <?php if($classes && $classes->num_rows > 0): ?>
-                <?php while($row = $classes->fetch_assoc()): 
-                    $cid = $row['id'];
-                    $today = date('Y-m-d');
-                    
-                    // Kiểm tra đã điểm danh hôm nay chưa
-                    $check = $conn->query("SELECT id FROM class_logs WHERE class_id=$cid AND DATE(check_in_time)='$today'");
-                    $is_done = ($check->num_rows > 0);
-                    
-                    // Lấy danh sách học viên của lớp này để nạp vào Modal
-                    $stu_sql = "SELECT s.id, s.full_name, s.phone 
-                                FROM students s 
-                                JOIN class_enrollments ce ON s.id = ce.student_id 
-                                WHERE ce.class_id = $cid";
-                    $students = $conn->query($stu_sql);
-                    $student_list = [];
-                    while($s = $students->fetch_assoc()) $student_list[] = $s;
-                ?>
-                <div class="col-md-6 col-lg-4">
-                    <div class="card shadow-sm h-100 card-class">
-                        <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
-                            <span class="text-primary"><?php echo $row['class_name']; ?></span>
-                            <?php if($is_done): ?>
-                                <span class="badge bg-success"><i class="fas fa-check"></i> Đã xong</span>
-                            <?php else: ?>
-                                <span class="badge bg-warning text-dark">Chưa dạy</span>
-                            <?php endif; ?>
-                        </div>
-                        <div class="card-body">
-                            <p class="mb-2"><i class="fas fa-clock text-warning me-2"></i> <?php echo $row['schedule']; ?></p>
-                            <p class="mb-2"><i class="fas fa-map-marker-alt text-danger me-2"></i> <?php echo $row['room']; ?></p>
-                            <p class="mb-2"><i class="fas fa-users text-info me-2"></i> <?php echo count($student_list); ?> học viên</p>
-                            <p class="mb-3"><i class="fas fa-user-tie text-secondary me-2"></i> GV: <strong><?php echo $row['teacher_name']; ?></strong></p>
-                            
-                            <hr>
-                            
-                            <?php if($uid == $row['teacher_id'] || $role_id == 1): ?>
-                                <button class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#attModal<?php echo $cid; ?>">
-                                    <i class="fas fa-clipboard-check"></i> Điểm danh & Vào lớp
-                                </button>
-                            <?php else: ?>
-                                <button class="btn btn-light w-100 border" disabled>Không phụ trách</button>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="modal fade" id="attModal<?php echo $cid; ?>" tabindex="-1">
-                    <div class="modal-dialog modal-lg">
-                        <div class="modal-content">
-                            <div class="modal-header bg-primary text-white">
-                                <h5 class="modal-title">Điểm danh: <strong><?php echo $row['class_name']; ?></strong></h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                            </div>
-                            <form method="POST">
-                                <div class="modal-body">
-                                    <input type="hidden" name="class_id" value="<?php echo $cid; ?>">
-                                    <div class="alert alert-info small">
-                                        <i class="fas fa-info-circle"></i> Xác nhận điểm danh này sẽ đồng thời ghi nhận công làm việc hôm nay cho bạn.
-                                    </div>
-                                    
-                                    <table class="table table-bordered table-hover align-middle">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>Học viên</th>
-                                                <th class="text-center text-success">Có mặt</th>
-                                                <th class="text-center text-danger">Vắng</th>
-                                                <th class="text-center text-warning">Muộn</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <?php if(count($student_list) > 0): ?>
-                                                <?php foreach($student_list as $stu): ?>
-                                                <tr>
-                                                    <td>
-                                                        <strong><?php echo $stu['full_name']; ?></strong><br>
-                                                        <small class="text-muted"><?php echo $stu['phone']; ?></small>
-                                                    </td>
-                                                    <td class="text-center">
-                                                        <input type="radio" class="form-check-input" name="status[<?php echo $stu['id']; ?>]" value="present" checked>
-                                                    </td>
-                                                    <td class="text-center">
-                                                        <input type="radio" class="form-check-input" name="status[<?php echo $stu['id']; ?>]" value="absent">
-                                                    </td>
-                                                    <td class="text-center">
-                                                        <input type="radio" class="form-check-input" name="status[<?php echo $stu['id']; ?>]" value="late">
-                                                    </td>
-                                                </tr>
-                                                <?php endforeach; ?>
-                                            <?php else: ?>
-                                                <tr><td colspan="4" class="text-center">Lớp chưa có học viên nào.</td></tr>
-                                            <?php endif; ?>
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                                    <button type="submit" name="save_attendance" class="btn btn-success fw-bold">
-                                        <i class="fas fa-save"></i> Lưu & Xác nhận dạy
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <table class="table table-hover align-middle border">
+                    <thead class="table-primary">
+                        <tr>
+                            <th>Tên Lớp</th>
+                            <th>Lịch học</th>
+                            <th>Phòng</th>
+                            <th class="text-center">Sĩ số (Thực)</th>
+                            <?php if($role_id == 1 || $role_id == 2): ?><th>Giáo viên</th><?php endif; ?>
+                            <th class="text-center">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if($classes->num_rows > 0): ?>
+                            <?php while($row = $classes->fetch_assoc()): ?>
+                            <tr>
+                                <td class="fw-bold text-primary"><?php echo $row['class_name']; ?></td>
+                                <td><i class="far fa-calendar-alt text-muted"></i> <?php echo $row['schedule']; ?></td>
+                                <td><span class="badge bg-light text-dark border"><?php echo $row['room']; ?></span></td>
+                                <td class="text-center">
+                                    <span class="badge bg-info text-dark" style="font-size: 0.9rem;">
+                                        <?php echo $row['real_student_count']; ?> HV
+                                    </span>
+                                </td>
+                                <?php if($role_id == 1 || $role_id == 2): ?><td><?php echo $row['teacher_name']; ?></td><?php endif; ?>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-success btn-view-students" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#classModal"
+                                            data-class-id="<?php echo $row['id']; ?>"
+                                            data-class-name="<?php echo $row['class_name']; ?>">
+                                        <i class="fas fa-users"></i> DS & Thêm
                                     </button>
+                                </td>
+                            </tr>
+                            <?php endwhile; ?>
+                        <?php else: ?>
+                            <tr><td colspan="6" class="text-center py-3">Chưa có dữ liệu lớp học.</td></tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="classModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="modalClassTitle">Chi tiết Lớp học</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-7 border-end">
+                            <h6 class="text-primary fw-bold mb-2">Danh sách học viên</h6>
+                            <div class="table-responsive" style="max-height: 350px; overflow-y: auto;">
+                                <table class="table table-sm table-striped" id="studentListTable">
+                                    <thead><tr><th>Họ tên</th><th>SĐT</th><th>Xóa</th></tr></thead>
+                                    <tbody id="studentListBody">
+                                        </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="col-md-5">
+                            <h6 class="text-success fw-bold mb-2">Thêm học viên vào lớp</h6>
+                            <form method="POST" class="bg-light p-3 rounded border shadow-sm">
+                                <input type="hidden" name="class_id" id="modalClassIdInput">
+                                <div class="mb-2">
+                                    <label class="small fw-bold">Họ và tên</label>
+                                    <input type="text" name="full_name" class="form-control form-control-sm" required placeholder="Nhập tên...">
                                 </div>
+                                <div class="mb-2">
+                                    <label class="small fw-bold">SĐT (Để check trùng)</label>
+                                    <input type="text" name="phone" class="form-control form-control-sm" required placeholder="09xxxxxxxx">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="small fw-bold">Email</label>
+                                    <input type="email" name="email" class="form-control form-control-sm">
+                                </div>
+                                <button type="submit" name="add_student_to_class" class="btn btn-success btn-sm w-100 mt-2">
+                                    <i class="fas fa-plus-circle"></i> Thêm ngay
+                                </button>
                             </form>
                         </div>
                     </div>
                 </div>
-                <?php endwhile; ?>
-            <?php else: ?>
-                <div class="col-12 text-center py-5 text-muted">Chưa có lớp học.</div>
-            <?php endif; ?>
+            </div>
         </div>
     </div>
 
-    <?php if ($can_manage_class): ?>
-    <div class="modal fade" id="addClassModal" tabindex="-1">
+    <div class="modal fade" id="createClassModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header bg-success text-white">
-                    <h5 class="modal-title">Thêm Lớp Mới</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
                 <form method="POST">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title"><i class="fas fa-folder-plus"></i> Tạo Lớp Học Mới</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
                     <div class="modal-body">
-                        <div class="mb-3"><label>Tên lớp</label><input type="text" name="class_name" class="form-control" required></div>
-                        <div class="mb-3"><label>Giáo viên</label>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Tên lớp</label>
+                            <input type="text" name="class_name" class="form-control" required placeholder="VD: IELTS Intensive K15">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Giáo viên phụ trách</label>
                             <select name="teacher_id" class="form-select" required>
-                                <?php foreach($teachers_list as $t): ?>
-                                    <option value="<?php echo $t['id']; ?>"><?php echo $t['full_name']; ?></option>
-                                <?php endforeach; ?>
+                                <?php 
+                                if ($teachers->num_rows > 0) {
+                                    while($t = $teachers->fetch_assoc()) {
+                                        echo "<option value='".$t['id']."'>".$t['full_name']."</option>";
+                                    }
+                                } else {
+                                    echo "<option value=''>Chưa có giáo viên nào</option>";
+                                }
+                                ?>
                             </select>
                         </div>
-                        <div class="row">
-                            <div class="col-6 mb-3"><label>Phòng</label><input type="text" name="room" class="form-control"></div>
-                            <div class="col-6 mb-3"><label>Sĩ số</label><input type="number" name="student_count" class="form-control" value="0"></div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Lịch học</label>
+                            <input type="text" name="schedule" class="form-control" required placeholder="VD: T2-T4-T6 (19h30)">
                         </div>
-                        <div class="mb-3"><label>Lịch học</label><input type="text" name="schedule" class="form-control"></div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Phòng học</label>
+                            <input type="text" name="room" class="form-control" placeholder="VD: P.301">
+                        </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                        <button type="submit" name="add_class" class="btn btn-success">Lưu lại</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" name="create_class" class="btn btn-primary">Tạo Lớp</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
-    <?php endif; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // SCRIPT AJAX: Lấy danh sách học viên
+        document.addEventListener('DOMContentLoaded', function () {
+            var modal = document.getElementById('classModal');
+            var title = document.getElementById('modalClassTitle');
+            var inputId = document.getElementById('modalClassIdInput');
+            var listBody = document.getElementById('studentListBody');
+
+            modal.addEventListener('show.bs.modal', function (event) {
+                var button = event.relatedTarget;
+                var classId = button.getAttribute('data-class-id');
+                var className = button.getAttribute('data-class-name');
+
+                title.textContent = "Lớp: " + className;
+                inputId.value = classId;
+                listBody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Đang tải...</td></tr>';
+
+                // Gọi file get_students_in_class.php (Đã tạo ở bước trước)
+                fetch('get_students_in_class.php?class_id=' + classId)
+                    .then(response => response.json())
+                    .then(data => {
+                        listBody.innerHTML = '';
+                        if (data.length > 0) {
+                            data.forEach(st => {
+                                listBody.innerHTML += `
+                                    <tr>
+                                        <td>${st.full_name}</td>
+                                        <td>${st.phone}</td>
+                                        <td>
+                                            <a href="teacher_classes.php?remove_student=${st.id}&class_id=${classId}" 
+                                               class="text-danger small"
+                                               onclick="return confirm('Xóa học viên này khỏi lớp?')">
+                                               <i class="fas fa-times"></i>
+                                            </a>
+                                        </td>
+                                    </tr>`;
+                            });
+                        } else {
+                            listBody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Chưa có học viên.</td></tr>';
+                        }
+                    })
+                    .catch(err => {
+                        listBody.innerHTML = '<tr><td colspan="3" class="text-center text-danger">Lỗi tải dữ liệu.</td></tr>';
+                    });
+            });
+        });
+    </script>
 </body>
 </html>

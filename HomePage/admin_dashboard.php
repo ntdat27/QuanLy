@@ -1,6 +1,10 @@
 <?php
 session_start();
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
+require_once 'db_connect.php';
+
+// Kiểm tra quyền: Admin (1) hoặc Trưởng phòng (2)
+// (Đã sửa lại cho khớp với hệ thống phân quyền role_id hiện tại của bạn)
+if (!isset($_SESSION['user_id']) || ($_SESSION['role_id'] != 1 && $_SESSION['role_id'] != 2)) {
     header("Location: index.php");
     exit();
 }
@@ -15,6 +19,16 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     <style>
         .card { transition: transform 0.3s; }
         .card:hover { transform: translateY(-5px); }
+        
+        /* Thêm CSS này để icon hiển thị đẹp như mẫu bạn muốn */
+        .dashboard-card-icon {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 3rem;
+            opacity: 0.2;
+            color: #fff;
+        }
     </style>
 </head>
 <body class="bg-light">
@@ -39,71 +53,98 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
             <p class="mb-0">Chào mừng quản trị viên quay trở lại. Hãy chọn chức năng bên dưới.</p>
         </div>
         
-        <div class="row g-4"> <div class="col-md-4">
+        <div class="row g-4"> 
+            <div class="col-md-4">
                 <div class="card text-white bg-primary h-100 shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="fas fa-users me-2"></i>Nhân sự</h5>
+                    <div class="card-body position-relative overflow-hidden">
+                        <i class="fas fa-users dashboard-card-icon"></i>
+                        <h5 class="card-title">Nhân sự</h5>
                         <p class="card-text">Quản lý danh sách nhân viên, xóa nhân viên vi phạm.</p>
                         <a href="admin_employees.php" class="btn btn-light btn-sm text-primary fw-bold stretched-link">Truy cập</a>
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
-    <div class="card text-white bg-dark h-100 shadow-sm position-relative overflow-hidden" style="background-color: #343a40 !important;">
-        <div class="card-body">
-            <i class="fas fa-user-tag dashboard-card-icon"></i>
-            <h5 class="card-title">Phân quyền</h5>
-            <p class="card-text small">Cấp quyền cho chức vụ.</p>
-            <a href="admin_roles.php" class="btn btn-light btn-sm text-dark fw-bold stretched-link">Truy cập</a>
-        </div>
-    </div>
-</div>
 
             <div class="col-md-4">
-    <div class="card text-white bg-success h-100 shadow-sm position-relative overflow-hidden">
-        <div class="card-body">
-            <i class="fas fa-check-double dashboard-card-icon"></i>
-            <h5 class="card-title">Phê duyệt</h5>
-            <p class="card-text small">Duyệt đơn nghỉ & Hồ sơ.</p>
-            <a href="admin_approvals.php" class="btn btn-light btn-sm text-success fw-bold stretched-link">Truy cập</a>
-        </div>
-    </div>
-</div>
+                <div class="card text-white bg-dark h-100 shadow-sm position-relative overflow-hidden" style="background-color: #6f42c1 !important;"> <div class="card-body">
+                        <i class="fas fa-headset dashboard-card-icon"></i>
+                        <h5 class="card-title">Tuyển sinh (Sale)</h5>
+                        <p class="card-text small">Quản lý khách hàng tiềm năng.</p>
+                        <a href="sale_leads.php" class="btn btn-light btn-sm text-dark fw-bold stretched-link">Truy cập</a>
+                    </div>
+                </div>
+            </div>
+
             <div class="col-md-4">
-    <div class="card text-white bg-danger h-100 shadow-sm position-relative overflow-hidden">
-        <div class="card-body">
-            <i class="fas fa-file-invoice-dollar dashboard-card-icon"></i>
-            <h5 class="card-title">Chi tiêu</h5>
-            <p class="card-text small">Quản lý hóa đơn nội bộ.</p>
-            <a href="admin_expenses.php" class="btn btn-light btn-sm text-danger fw-bold stretched-link">Truy cập</a>
-        </div>
-    </div>
-</div>
-<div class="col-md-4">
-    <div class="card text-white bg-primary h-100 shadow-sm position-relative overflow-hidden" style="background: linear-gradient(45deg, #0d6efd, #0a58ca) !important;">
-        <div class="card-body">
-            <i class="fas fa-chart-line dashboard-card-icon"></i>
-            <h5 class="card-title">Báo cáo Tài chính</h5>
-            <p class="card-text small">Tổng hợp Lương & Chi tiêu.</p>
-            <a href="admin_financial_report.php" class="btn btn-light btn-sm text-primary fw-bold stretched-link">Truy cập</a>
-        </div>
-    </div>
-</div>
-<div class="col-md-4">
-    <div class="card text-white bg-secondary h-100 shadow-sm position-relative overflow-hidden" style="background-color: #495057 !important;">
-        <div class="card-body">
-            <i class="fas fa-cogs dashboard-card-icon"></i>
-            <h5 class="card-title">Cấu hình</h5>
-            <p class="card-text small">Chỉnh sửa mức phạt, phụ cấp.</p>
-            <a href="admin_settings.php" class="btn btn-light btn-sm text-secondary fw-bold stretched-link">Truy cập</a>
-        </div>
-    </div>
-</div>
+                <div class="card text-white bg-dark h-100 shadow-sm position-relative overflow-hidden" style="background-color: #0dcaf0 !important;"> <div class="card-body">
+                        <i class="fas fa-chalkboard-teacher dashboard-card-icon"></i>
+                        <h5 class="card-title">Quản lý Lớp học</h5>
+                        <p class="card-text small">Danh sách lớp & học viên.</p>
+                        <a href="teacher_classes.php" class="btn btn-light btn-sm text-dark fw-bold stretched-link">Truy cập</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card text-white bg-dark h-100 shadow-sm position-relative overflow-hidden" style="background-color: #343a40 !important;">
+                    <div class="card-body">
+                        <i class="fas fa-user-tag dashboard-card-icon"></i>
+                        <h5 class="card-title">Phân quyền</h5>
+                        <p class="card-text small">Cấp quyền cho chức vụ.</p>
+                        <a href="admin_roles.php" class="btn btn-light btn-sm text-dark fw-bold stretched-link">Truy cập</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card text-white bg-success h-100 shadow-sm position-relative overflow-hidden">
+                    <div class="card-body">
+                        <i class="fas fa-check-double dashboard-card-icon"></i>
+                        <h5 class="card-title">Phê duyệt</h5>
+                        <p class="card-text small">Duyệt đơn nghỉ & Hồ sơ.</p>
+                        <a href="admin_approvals.php" class="btn btn-light btn-sm text-success fw-bold stretched-link">Truy cập</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card text-white bg-danger h-100 shadow-sm position-relative overflow-hidden">
+                    <div class="card-body">
+                        <i class="fas fa-file-invoice-dollar dashboard-card-icon"></i>
+                        <h5 class="card-title">Chi tiêu</h5>
+                        <p class="card-text small">Quản lý hóa đơn nội bộ.</p>
+                        <a href="admin_expenses.php" class="btn btn-light btn-sm text-danger fw-bold stretched-link">Truy cập</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card text-white bg-primary h-100 shadow-sm position-relative overflow-hidden" style="background: linear-gradient(45deg, #0d6efd, #0a58ca) !important;">
+                    <div class="card-body">
+                        <i class="fas fa-chart-line dashboard-card-icon"></i>
+                        <h5 class="card-title">Báo cáo Tài chính</h5>
+                        <p class="card-text small">Tổng hợp Lương & Chi tiêu.</p>
+                        <a href="admin_financial_report.php" class="btn btn-light btn-sm text-primary fw-bold stretched-link">Truy cập</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card text-white bg-secondary h-100 shadow-sm position-relative overflow-hidden" style="background-color: #495057 !important;">
+                    <div class="card-body">
+                        <i class="fas fa-cogs dashboard-card-icon"></i>
+                        <h5 class="card-title">Cấu hình</h5>
+                        <p class="card-text small">Chỉnh sửa mức phạt, phụ cấp.</p>
+                        <a href="admin_settings.php" class="btn btn-light btn-sm text-secondary fw-bold stretched-link">Truy cập</a>
+                    </div>
+                </div>
+            </div>
 
             <div class="col-md-4">
                 <div class="card text-white bg-warning h-100 shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title text-dark"><i class="fas fa-coins me-2"></i>Tính Lương</h5>
+                    <div class="card-body position-relative overflow-hidden">
+                        <i class="fas fa-coins dashboard-card-icon text-white"></i>
+                        <h5 class="card-title text-dark">Tính Lương</h5>
                         <p class="card-text text-dark">Tính toán và quản lý lương thưởng hàng tháng.</p>
                         <a href="admin_payroll.php" class="btn btn-light btn-sm text-warning fw-bold stretched-link">Truy cập</a>
                     </div>
@@ -112,9 +153,10 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 
             <div class="col-md-4">
                 <div class="card text-white bg-info h-100 shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="fas fa-clock me-2"></i>Quản lý Chấm công</h5>
-                        <p class="card-text">Xem nhật ký check-in/out của nhân viên theo ngày.</p>
+                    <div class="card-body position-relative overflow-hidden">
+                        <i class="fas fa-clock dashboard-card-icon"></i>
+                        <h5 class="card-title">Quản lý Chấm công</h5>
+                        <p class="card-text">Xem nhật ký check-in/out.</p>
                         <a href="admin_attendance.php" class="btn btn-light btn-sm text-info fw-bold stretched-link">Truy cập</a>
                     </div>
                 </div>
@@ -122,40 +164,49 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 
             <div class="col-md-4">
                 <div class="card text-white bg-dark h-100 shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="fas fa-newspaper me-2"></i>Quản lý Tin tức</h5>
-                        <p class="card-text">Đăng bài viết mới lên trang chủ.</p>
+                    <div class="card-body position-relative overflow-hidden">
+                        <i class="fas fa-newspaper dashboard-card-icon"></i>
+                        <h5 class="card-title">Quản lý Tin tức</h5>
+                        <p class="card-text">Đăng bài viết mới.</p>
                         <a href="admin_news.php" class="btn btn-light btn-sm text-dark fw-bold stretched-link">Truy cập</a>
                     </div>
                 </div>
             </div>
+
             <div class="col-md-4">
-                <div class="card text-white bg-secondary h-100 shadow-sm" style="background-color: #6c757d !important;"> <div class="card-body">
-                        <h5 class="card-title"><i class="fas fa-building me-2"></i>Quản lý Phòng ban</h5>
-                        <p class="card-text">Thiết lập cơ cấu tổ chức và các bộ phận.</p>
+                <div class="card text-white bg-secondary h-100 shadow-sm" style="background-color: #6c757d !important;"> 
+                    <div class="card-body position-relative overflow-hidden">
+                        <i class="fas fa-building dashboard-card-icon"></i>
+                        <h5 class="card-title">Quản lý Phòng ban</h5>
+                        <p class="card-text">Thiết lập cơ cấu tổ chức.</p>
                         <a href="admin_departments.php" class="btn btn-light btn-sm text-secondary fw-bold stretched-link">Truy cập</a>
                     </div>
                 </div>
             </div>
+
             <div class="col-md-4">
-                <div class="card text-white bg-dark h-100 shadow-sm" style="background-color: #fd7e14 !important;"> <div class="card-body">
-                        <h5 class="card-title"><i class="fas fa-bullhorn me-2"></i>Thông báo nội bộ</h5>
+                <div class="card text-white bg-dark h-100 shadow-sm" style="background-color: #fd7e14 !important;"> 
+                    <div class="card-body position-relative overflow-hidden">
+                        <i class="fas fa-bullhorn dashboard-card-icon"></i>
+                        <h5 class="card-title">Thông báo nội bộ</h5>
                         <p class="card-text">Gửi thông báo đến toàn bộ nhân viên.</p>
                         <a href="admin_notifications.php" class="btn btn-light btn-sm text-dark fw-bold stretched-link">Truy cập</a>
                     </div>
                 </div>
             </div>
 
-             <div class="col-md-4">
+            <div class="col-md-4">
                 <div class="card text-white bg-secondary h-100 shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="fas fa-home me-2"></i>Trang chủ</h5>
+                    <div class="card-body position-relative overflow-hidden">
+                        <i class="fas fa-home dashboard-card-icon"></i>
+                        <h5 class="card-title">Trang chủ</h5>
                         <p class="card-text">Quay về trang hiển thị chính.</p>
                         <a href="index.php" class="btn btn-light btn-sm text-secondary fw-bold stretched-link">Về trang chủ</a>
                     </div>
                 </div>
             </div>
 
-        </div> </div>
+        </div> 
+    </div>
 </body>
 </html>
