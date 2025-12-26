@@ -24,7 +24,7 @@ if (isset($_POST['update_account'])) {
         $sql = "UPDATE users SET role_id=?, status=?, full_name=?, email=? WHERE id=?";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("isssi", $role_id, $status, $full_name, $email, $user_id);
-        
+
         if ($stmt->execute()) {
             $msg = "<div class='alert alert-success'>Đã cập nhật Tài khoản & Phân quyền!</div>";
         } else {
@@ -52,54 +52,74 @@ if (isset($_POST['save_tab1'])) {
     $crm_file = $_POST['current_crm_file'] ?? '';
     if (isset($_FILES['crm_file_up']) && $_FILES['crm_file_up']['error'] == 0) {
         $target = "img/docs/" . time() . "_crm_" . basename($_FILES['crm_file_up']['name']);
-        if (!is_dir('img/docs')) mkdir('img/docs', 0777, true);
-        if (move_uploaded_file($_FILES['crm_file_up']['tmp_name'], $target)) $crm_file = $target;
+        if (!is_dir('img/docs'))
+            mkdir('img/docs', 0777, true);
+        if (move_uploaded_file($_FILES['crm_file_up']['tmp_name'], $target))
+            $crm_file = $target;
     }
 
     $check = $conn->query("SELECT user_id FROM employee_details WHERE user_id=$user_id");
-    if($check->num_rows > 0) {
+    if ($check->num_rows > 0) {
         $stmt = $conn->prepare("UPDATE employee_details SET dob=?, gender=?, nationality=?, marital_status=?, phone=?, zalo=?, current_address=?, hometown=?, criminal_record_status=?, criminal_record_number=?, criminal_record_date=?, criminal_record_file=? WHERE user_id=?");
         $stmt->bind_param("ssssssssssssi", $dob, $gender, $nation, $marital, $phone, $zalo, $addr, $home, $crm_status, $crm_num, $crm_date, $crm_file, $user_id);
     } else {
         $stmt = $conn->prepare("INSERT INTO employee_details (dob, gender, nationality, marital_status, phone, zalo, current_address, hometown, criminal_record_status, criminal_record_number, criminal_record_date, criminal_record_file, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->bind_param("ssssssssssssi", $dob, $gender, $nation, $marital, $phone, $zalo, $addr, $home, $crm_status, $crm_num, $crm_date, $crm_file, $user_id);
     }
-    if($stmt->execute()) $msg = "<div class='alert alert-success'>Đã lưu thông tin cá nhân!</div>";
+    if ($stmt->execute())
+        $msg = "<div class='alert alert-success'>Đã lưu thông tin cá nhân!</div>";
 }
 
-// Tab 2: Chuyên môn (SỬA LỖI Ở ĐÂY)
+// --- SỬA LẠI XỬ LÝ: LƯU TAB 2 (ĐA NĂNG) ---
 if (isset($_POST['save_tab2'])) {
-    $main_sub = $_POST['main_subject'] ?? '';
-    $band = $_POST['teaching_band'] ?? '';
-    $demo = $_POST['demo_video_link'] ?? '';
+    // Lấy dữ liệu chung
     $edu = $_POST['education_level'] ?? '';
     $major = $_POST['major'] ?? '';
     $cert_type = $_POST['certificate_type'] ?? '';
     $cert_score = $_POST['certificate_score'] ?? 0;
 
-    $conn->query("UPDATE employee_details SET education_level='$edu', major='$major', certificate_type='$cert_type', certificate_score='$cert_score' WHERE user_id=$user_id");
+    // Lấy dữ liệu riêng theo vai trò
+    $main_sub = $_POST['main_subject'] ?? '';      // Giáo viên
+    $band = $_POST['teaching_band'] ?? '';         // Giáo viên
+    $demo = $_POST['demo_video_link'] ?? '';       // Giáo viên
+    $target = $_POST['sales_target'] ?? 0;         // Sales
+    $port = $_POST['portfolio_link'] ?? '';        // Marketing/IT
+    $skills = $_POST['skills'] ?? '';              // Chung
 
+    // Cập nhật bảng employee_details (Thông tin bằng cấp)
+    $stmt_detail = $conn->prepare("UPDATE employee_details SET education_level=?, major=?, certificate_type=?, certificate_score=? WHERE user_id=?");
+    $stmt_detail->bind_param("ssssd", $edu, $major, $cert_type, $cert_score, $user_id);
+    $stmt_detail->execute();
+
+    // Cập nhật bảng teaching_profile (Lúc này đóng vai trò là Work Profile)
+    // Kiểm tra xem user đã có record chưa
     $check = $conn->query("SELECT user_id FROM teaching_profile WHERE user_id=$user_id");
-    if($check->num_rows > 0) {
-        $stmt = $conn->prepare("UPDATE teaching_profile SET main_subject=?, teaching_band=?, demo_video_link=? WHERE user_id=?");
-        $stmt->bind_param("sssi", $main_sub, $band, $demo, $user_id);
+    
+    if ($check->num_rows > 0) {
+        $stmt = $conn->prepare("UPDATE teaching_profile SET main_subject=?, teaching_band=?, demo_video_link=?, sales_target=?, portfolio_link=?, skills=? WHERE user_id=?");
+        $stmt->bind_param("sssdsIi", $main_sub, $band, $demo, $target, $port, $skills, $user_id);
     } else {
-        $stmt = $conn->prepare("INSERT INTO teaching_profile (main_subject, teaching_band, demo_video_link, user_id) VALUES (?, ?, ?, ?)");
-        $stmt->bind_param("sssi", $main_sub, $band, $demo, $user_id);
+        $stmt = $conn->prepare("INSERT INTO teaching_profile (main_subject, teaching_band, demo_video_link, sales_target, portfolio_link, skills, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("sssdsIi", $main_sub, $band, $demo, $target, $port, $skills, $user_id);
     }
-    $stmt->execute();
-    $msg = "<div class='alert alert-success'>Đã lưu hồ sơ chuyên môn!</div>";
+    
+    if ($stmt->execute()) {
+        $msg = "<div class='alert alert-success'>Đã lưu hồ sơ chuyên môn!</div>";
+    } else {
+        $msg = "<div class='alert alert-danger'>Lỗi: " . $conn->error . "</div>";
+    }
 }
 
 // Tab 3: Giấy tờ pháp lý
 if (isset($_POST['add_doc'])) {
     $type = $_POST['doc_type'];
     $num = $_POST['doc_number'];
-    $issue = $_POST['issue_date'] ?? ''; 
+    $issue = $_POST['issue_date'] ?? '';
     $place = $_POST['place_of_issue'] ?? '';
     $expiry = $_POST['expiry_date'] ?? '';
-    
-    $front = ''; $back = '';
+
+    $front = '';
+    $back = '';
     if (isset($_FILES['file_front']) && $_FILES['file_front']['error'] == 0) {
         $front = "img/docs/" . time() . "_front_" . basename($_FILES['file_front']['name']);
         move_uploaded_file($_FILES['file_front']['tmp_name'], $front);
@@ -111,18 +131,20 @@ if (isset($_POST['add_doc'])) {
 
     $stmt = $conn->prepare("INSERT INTO legal_documents (user_id, doc_type, doc_number, issue_date, place_of_issue, expiry_date, doc_file_front, doc_file_back) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
     $stmt->bind_param("isssssss", $user_id, $type, $num, $issue, $place, $expiry, $front, $back);
-    
-    if($stmt->execute()) $msg = "<div class='alert alert-success'>Đã thêm giấy tờ!</div>";
-    else $msg = "<div class='alert alert-danger'>Lỗi: " . $conn->error . "</div>";
+
+    if ($stmt->execute())
+        $msg = "<div class='alert alert-success'>Đã thêm giấy tờ!</div>";
+    else
+        $msg = "<div class='alert alert-danger'>Lỗi: " . $conn->error . "</div>";
 }
 
 // Tab 4: Hợp đồng
 if (isset($_POST['add_contract'])) {
     $start = $_POST['start_date'];
     $end = $_POST['end_date'];
-    
+
     $check_contract = $conn->query("SELECT id FROM labor_contracts WHERE user_id = $user_id AND end_date >= '$start'");
-    
+
     if ($check_contract->num_rows > 0) {
         $msg = "<div class='alert alert-danger fw-bold'><i class='fas fa-exclamation-circle'></i> Lỗi: Nhân viên này vẫn còn hợp đồng cũ chưa hết hạn!</div>";
     } else {
@@ -133,7 +155,7 @@ if (isset($_POST['add_contract'])) {
         $bank = $_POST['bank_name'] ?? '';
         $acc = $_POST['bank_number'] ?? '';
         $tax = $_POST['tax_code'] ?? '';
-        
+
         $file = '';
         if (isset($_FILES['contract_file']) && $_FILES['contract_file']['error'] == 0) {
             $file = "img/docs/" . time() . "_contract_" . basename($_FILES['contract_file']['name']);
@@ -142,10 +164,33 @@ if (isset($_POST['add_contract'])) {
 
         $stmt = $conn->prepare("INSERT INTO labor_contracts (user_id, contract_number, contract_type, start_date, end_date, base_salary, hourly_rate, bank_name, bank_number, tax_code, contract_file) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->bind_param("issssssssss", $user_id, $num, $type, $start, $end, $base, $hourly, $bank, $acc, $tax, $file);
-        
-        if ($stmt->execute()) $msg = "<div class='alert alert-success'>Đã thêm hợp đồng mới!</div>";
-        else $msg = "<div class='alert alert-danger'>Lỗi: " . $conn->error . "</div>";
+
+        if ($stmt->execute())
+            $msg = "<div class='alert alert-success'>Đã thêm hợp đồng mới!</div>";
+        else
+            $msg = "<div class='alert alert-danger'>Lỗi: " . $conn->error . "</div>";
     }
+}
+// --- XỬ LÝ : XÓA HỢP ĐỒNG ---
+if (isset($_GET['delete_contract_id'])) {
+    $id_to_delete = $_GET['delete_contract_id'];
+
+    // Sử dụng Prepared Statement để bảo mật
+    $stmt_del = $conn->prepare("DELETE FROM labor_contracts WHERE id = ? AND user_id = ?");
+    $stmt_del->bind_param("ii", $id_to_delete, $user_id);
+
+    if ($stmt_del->execute()) {
+        // Chuyển hướng về trang hiện tại để tránh bị lặp lại lệnh xóa khi refresh
+        header("Location: admin_employee_detail.php?id=$user_id&status=deleted");
+        exit();
+    } else {
+        $msg = "<div class='alert alert-danger'>Lỗi khi xóa: " . $conn->error . "</div>";
+    }
+}
+
+// Thêm dòng này để bắt thông báo thành công sau khi redirect
+if (isset($_GET['status']) && $_GET['status'] == 'deleted') {
+    $msg = "<div class='alert alert-success'>Đã xóa hợp đồng thành công!</div>";
 }
 
 // Tab 5: Bảo hiểm
@@ -160,15 +205,17 @@ if (isset($_POST['save_tab5'])) {
     $com_exp = $_POST['commercial_expiry'] ?? '';
 
     $check = $conn->query("SELECT user_id FROM insurance WHERE user_id=$user_id");
-    if($check->num_rows > 0) {
+    if ($check->num_rows > 0) {
         $stmt = $conn->prepare("UPDATE insurance SET social_status=?, social_book_number=?, health_card_number=?, hospital_reg=?, social_salary_base=?, commercial_pkg_name=?, commercial_contract_num=?, commercial_expiry=? WHERE user_id=?");
         $stmt->bind_param("ssssssssi", $status, $book, $card, $hosp, $sal, $com_pkg, $com_num, $com_exp, $user_id);
     } else {
         $stmt = $conn->prepare("INSERT INTO insurance (social_status, social_book_number, health_card_number, hospital_reg, social_salary_base, commercial_pkg_name, commercial_contract_num, commercial_expiry, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->bind_param("ssssssssi", $status, $book, $card, $hosp, $sal, $com_pkg, $com_num, $com_exp, $user_id);
     }
-    if ($stmt->execute()) $msg = "<div class='alert alert-success'>Đã lưu thông tin bảo hiểm!</div>";
-    else $msg = "<div class='alert alert-danger'>Lỗi: " . $conn->error . "</div>";
+    if ($stmt->execute())
+        $msg = "<div class='alert alert-success'>Đã lưu thông tin bảo hiểm!</div>";
+    else
+        $msg = "<div class='alert alert-danger'>Lỗi: " . $conn->error . "</div>";
 }
 
 // Tab 6: Người thân
@@ -177,12 +224,14 @@ if (isset($_POST['add_contact'])) {
     $rel = $_POST['relationship'];
     $phone = $_POST['contact_phone'];
     $addr = $_POST['contact_address'] ?? '';
-    
+
     $stmt = $conn->prepare("INSERT INTO emergency_contacts (user_id, name, relationship, phone, address) VALUES (?, ?, ?, ?, ?)");
     $stmt->bind_param("issss", $user_id, $name, $rel, $phone, $addr);
-    
-    if ($stmt->execute()) $msg = "<div class='alert alert-success'>Đã thêm người thân!</div>";
-    else $msg = "<div class='alert alert-danger'>Lỗi: " . $conn->error . "</div>";
+
+    if ($stmt->execute())
+        $msg = "<div class='alert alert-success'>Đã thêm người thân!</div>";
+    else
+        $msg = "<div class='alert alert-danger'>Lỗi: " . $conn->error . "</div>";
 }
 
 // --- LẤY DỮ LIỆU HIỂN THỊ ---
@@ -193,7 +242,8 @@ $sql_u = "SELECT u.*, r.name as role_name, d.name as dept_name
           WHERE u.id = $user_id";
 $user = $conn->query($sql_u)->fetch_assoc();
 
-if (!$user) die("Không tìm thấy nhân viên!");
+if (!$user)
+    die("Không tìm thấy nhân viên!");
 
 $detail = $conn->query("SELECT * FROM employee_details WHERE user_id=$user_id")->fetch_assoc();
 $teaching = $conn->query("SELECT * FROM teaching_profile WHERE user_id=$user_id")->fetch_assoc();
@@ -209,16 +259,29 @@ $curr_cert = $detail['certificate_type'] ?? 'None';
 
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <title>Hồ sơ: <?php echo $user['full_name']; ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        .section-title { border-left: 4px solid #0d6efd; padding-left: 10px; font-weight: bold; color: #0d6efd; margin-bottom: 15px; margin-top: 10px; }
-        .bg-account { background-color: #fff3cd; border: 1px solid #ffecb5; }
+        .section-title {
+            border-left: 4px solid #0d6efd;
+            padding-left: 10px;
+            font-weight: bold;
+            color: #0d6efd;
+            margin-bottom: 15px;
+            margin-top: 10px;
+        }
+
+        .bg-account {
+            background-color: #fff3cd;
+            border: 1px solid #ffecb5;
+        }
     </style>
 </head>
+
 <body class="bg-light">
     <div class="container mt-4 mb-5">
         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -232,13 +295,16 @@ $curr_cert = $detail['certificate_type'] ?? 'None';
             <div class="col-md-4">
                 <div class="card shadow-sm mb-3">
                     <div class="card-body text-center">
-                        <img src="<?php echo $user['avatar'] ?? 'img/default.jpg'; ?>" class="rounded-circle mx-auto d-block mb-3" style="width: 120px; height: 120px; object-fit: cover;">
+                        <img src="<?php echo $user['avatar'] ?? 'img/default.jpg'; ?>"
+                            class="rounded-circle mx-auto d-block mb-3"
+                            style="width: 120px; height: 120px; object-fit: cover;">
                         <h5 class="mb-0"><?php echo $user['full_name']; ?></h5>
                         <small class="text-muted"><?php echo $user['email']; ?></small>
                         <div class="mt-2">
                             <span class="badge bg-primary"><?php echo $user['role_name']; ?></span>
-                            <span class="badge bg-info text-dark"><?php echo $user['dept_name'] ?? 'Chưa phân phòng'; ?></span>
-                            <span class="badge <?php echo ($user['status']=='active')?'bg-success':'bg-danger'; ?>">
+                            <span
+                                class="badge bg-info text-dark"><?php echo $user['dept_name'] ?? 'Chưa phân phòng'; ?></span>
+                            <span class="badge <?php echo ($user['status'] == 'active') ? 'bg-success' : 'bg-danger'; ?>">
                                 <?php echo ucfirst($user['status']); ?>
                             </span>
                         </div>
@@ -253,21 +319,23 @@ $curr_cert = $detail['certificate_type'] ?? 'None';
                         <form method="POST">
                             <div class="mb-2">
                                 <label class="form-label fw-bold small">Họ và tên (Hiển thị)</label>
-                                <input type="text" name="full_name" class="form-control" value="<?php echo $user['full_name']; ?>" required>
+                                <input type="text" name="full_name" class="form-control"
+                                    value="<?php echo $user['full_name']; ?>" required>
                             </div>
                             <div class="mb-2">
                                 <label class="form-label fw-bold small">Email (Đăng nhập)</label>
-                                <input type="email" name="email" class="form-control" value="<?php echo $user['email']; ?>" required>
+                                <input type="email" name="email" class="form-control"
+                                    value="<?php echo $user['email']; ?>" required>
                             </div>
                             <div class="row">
                                 <div class="col-md-7 mb-3">
                                     <label class="form-label fw-bold small">Vai trò (Phân quyền)</label>
                                     <select name="role_id" class="form-select border-primary">
-                                        <?php 
-                                        $roles_list->data_seek(0); 
-                                        while($r = $roles_list->fetch_assoc()): 
+                                        <?php
+                                        $roles_list->data_seek(0);
+                                        while ($r = $roles_list->fetch_assoc()):
                                             $selected = ($user['role_id'] == $r['id']) ? 'selected' : '';
-                                        ?>
+                                            ?>
                                             <option value="<?php echo $r['id']; ?>" <?php echo $selected; ?>>
                                                 <?php echo $r['name']; ?>
                                             </option>
@@ -294,95 +362,186 @@ $curr_cert = $detail['certificate_type'] ?? 'None';
                 <div class="card shadow-sm">
                     <div class="card-header bg-white">
                         <ul class="nav nav-tabs card-header-tabs" id="profileTabs" role="tablist">
-                            <li class="nav-item"><button class="nav-link active fw-bold" data-bs-toggle="tab" data-bs-target="#tab1">1. Nhân viên</button></li>
-                            <li class="nav-item"><button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#tab2">2. Chuyên môn</button></li>
-                            <li class="nav-item"><button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#tab3">3. Pháp lý</button></li>
-                            <li class="nav-item"><button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#tab4">4. Hợp đồng</button></li>
-                            <li class="nav-item"><button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#tab5">5. Bảo hiểm</button></li>
-                            <li class="nav-item"><button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#tab6">6. Người thân</button></li>
+                            <li class="nav-item"><button class="nav-link active fw-bold" data-bs-toggle="tab"
+                                    data-bs-target="#tab1">1. Nhân viên</button></li>
+                            <li class="nav-item"><button class="nav-link fw-bold" data-bs-toggle="tab"
+                                    data-bs-target="#tab2">2. Chuyên môn</button></li>
+                            <li class="nav-item"><button class="nav-link fw-bold" data-bs-toggle="tab"
+                                    data-bs-target="#tab3">3. Pháp lý</button></li>
+                            <li class="nav-item"><button class="nav-link fw-bold" data-bs-toggle="tab"
+                                    data-bs-target="#tab4">4. Hợp đồng</button></li>
+                            <li class="nav-item"><button class="nav-link fw-bold" data-bs-toggle="tab"
+                                    data-bs-target="#tab5">5. Bảo hiểm</button></li>
+                            <li class="nav-item"><button class="nav-link fw-bold" data-bs-toggle="tab"
+                                    data-bs-target="#tab6">6. Người thân</button></li>
                         </ul>
                     </div>
 
                     <div class="card-body">
                         <div class="tab-content">
-                            
+
                             <div class="tab-pane fade show active" id="tab1">
                                 <form method="POST" enctype="multipart/form-data">
                                     <h6 class="text-primary border-bottom pb-2">Thông tin cá nhân & Liên hệ</h6>
                                     <div class="row g-3 mb-3">
-                                        <div class="col-md-4"><label>Ngày sinh</label><input type="date" name="dob" class="form-control" value="<?php echo $detail['dob'] ?? ''; ?>"></div>
-                                        <div class="col-md-4"><label>Giới tính</label><select name="gender" class="form-select"><option value="Nam" <?php echo ($detail['gender']??'')=='Nam'?'selected':''; ?>>Nam</option><option value="Nữ" <?php echo ($detail['gender']??'')=='Nữ'?'selected':''; ?>>Nữ</option></select></div>
-                                        <div class="col-md-4"><label>Quốc tịch</label><input type="text" name="nationality" class="form-control" value="<?php echo $detail['nationality'] ?? 'Việt Nam'; ?>"></div>
-                                        <div class="col-md-4"><label>Hôn nhân</label><select name="marital_status" class="form-select"><option value="Độc thân">Độc thân</option><option value="Đã kết hôn">Đã kết hôn</option></select></div>
-                                        <div class="col-md-4"><label>SĐT chính</label><input type="text" name="phone" class="form-control" value="<?php echo $detail['phone'] ?? ''; ?>"></div>
-                                        <div class="col-md-4"><label>Zalo</label><input type="text" name="zalo" class="form-control" value="<?php echo $detail['zalo'] ?? ''; ?>"></div>
-                                        <div class="col-md-6"><label>Địa chỉ hiện tại</label><input type="text" name="current_address" class="form-control" value="<?php echo $detail['current_address'] ?? ''; ?>"></div>
-                                        <div class="col-md-6"><label>Quê quán</label><input type="text" name="hometown" class="form-control" value="<?php echo $detail['hometown'] ?? ''; ?>"></div>
+                                        <div class="col-md-4"><label>Ngày sinh</label><input type="date" name="dob"
+                                                class="form-control" value="<?php echo $detail['dob'] ?? ''; ?>"></div>
+                                        <div class="col-md-4"><label>Giới tính</label><select name="gender"
+                                                class="form-select">
+                                                <option value="Nam" <?php echo ($detail['gender'] ?? '') == 'Nam' ? 'selected' : ''; ?>>Nam</option>
+                                                <option value="Nữ" <?php echo ($detail['gender'] ?? '') == 'Nữ' ? 'selected' : ''; ?>>Nữ</option>
+                                            </select></div>
+                                        <div class="col-md-4"><label>Quốc tịch</label><input type="text"
+                                                name="nationality" class="form-control"
+                                                value="<?php echo $detail['nationality'] ?? 'Việt Nam'; ?>"></div>
+                                        <div class="col-md-4"><label>Hôn nhân</label><select name="marital_status"
+                                                class="form-select">
+                                                <option value="Độc thân">Độc thân</option>
+                                                <option value="Đã kết hôn">Đã kết hôn</option>
+                                            </select></div>
+                                        <div class="col-md-4"><label>SĐT chính</label><input type="text" name="phone"
+                                                class="form-control" value="<?php echo $detail['phone'] ?? ''; ?>">
+                                        </div>
+                                        <div class="col-md-4"><label>Zalo</label><input type="text" name="zalo"
+                                                class="form-control" value="<?php echo $detail['zalo'] ?? ''; ?>"></div>
+                                        <div class="col-md-6"><label>Địa chỉ hiện tại</label><input type="text"
+                                                name="current_address" class="form-control"
+                                                value="<?php echo $detail['current_address'] ?? ''; ?>"></div>
+                                        <div class="col-md-6"><label>Quê quán</label><input type="text" name="hometown"
+                                                class="form-control" value="<?php echo $detail['hometown'] ?? ''; ?>">
+                                        </div>
                                     </div>
 
                                     <h6 class="text-primary border-bottom pb-2 mt-4">Lý lịch & Đạo đức</h6>
                                     <div class="row g-3">
                                         <div class="col-md-4"><label>Trạng thái</label>
                                             <select name="criminal_record_status" class="form-select">
-                                                <option value="Đang xác minh" <?php echo ($detail['criminal_record_status']??'')=='Đang xác minh'?'selected':''; ?>>Đang xác minh</option>
-                                                <option value="Trong sạch" <?php echo ($detail['criminal_record_status']??'')=='Trong sạch'?'selected':''; ?>>Trong sạch</option>
-                                                <option value="Có tiền án" <?php echo ($detail['criminal_record_status']??'')=='Có tiền án'?'selected':''; ?>>Có tiền án</option>
+                                                <option value="Đang xác minh" <?php echo ($detail['criminal_record_status'] ?? '') == 'Đang xác minh' ? 'selected' : ''; ?>>Đang xác minh</option>
+                                                <option value="Trong sạch" <?php echo ($detail['criminal_record_status'] ?? '') == 'Trong sạch' ? 'selected' : ''; ?>>Trong sạch</option>
+                                                <option value="Có tiền án" <?php echo ($detail['criminal_record_status'] ?? '') == 'Có tiền án' ? 'selected' : ''; ?>>Có tiền án</option>
                                             </select>
                                         </div>
-                                        <div class="col-md-4"><label>Số phiếu LLTP</label><input type="text" name="criminal_record_number" class="form-control" value="<?php echo $detail['criminal_record_number'] ?? ''; ?>"></div>
-                                        <div class="col-md-4"><label>Ngày cấp</label><input type="date" name="criminal_record_date" class="form-control" value="<?php echo $detail['criminal_record_date'] ?? ''; ?>"></div>
+                                        <div class="col-md-4"><label>Số phiếu LLTP</label><input type="text"
+                                                name="criminal_record_number" class="form-control"
+                                                value="<?php echo $detail['criminal_record_number'] ?? ''; ?>"></div>
+                                        <div class="col-md-4"><label>Ngày cấp</label><input type="date"
+                                                name="criminal_record_date" class="form-control"
+                                                value="<?php echo $detail['criminal_record_date'] ?? ''; ?>"></div>
                                         <div class="col-12">
                                             <label>File Scan Lý lịch</label>
                                             <input type="file" name="crm_file_up" class="form-control">
-                                            <input type="hidden" name="current_crm_file" value="<?php echo $detail['criminal_record_file'] ?? ''; ?>">
-                                            <?php if(!empty($detail['criminal_record_file'])): ?><a href="<?php echo $detail['criminal_record_file']; ?>" target="_blank">Xem file hiện tại</a><?php endif; ?>
+                                            <input type="hidden" name="current_crm_file"
+                                                value="<?php echo $detail['criminal_record_file'] ?? ''; ?>">
+                                            <?php if (!empty($detail['criminal_record_file'])): ?><a
+                                                    href="<?php echo $detail['criminal_record_file']; ?>"
+                                                    target="_blank">Xem file hiện tại</a><?php endif; ?>
                                         </div>
                                     </div>
-                                    <div class="mt-3 text-end"><button type="submit" name="save_tab1" class="btn btn-primary">Lưu Thông Tin</button></div>
+                                    <div class="mt-3 text-end"><button type="submit" name="save_tab1"
+                                            class="btn btn-primary">Lưu Thông Tin</button></div>
                                 </form>
                             </div>
 
                             <div class="tab-pane fade" id="tab2">
                                 <form method="POST">
-                                    <h6 class="text-primary border-bottom pb-2">Năng lực giảng dạy</h6>
+                                    <h6 class="text-primary border-bottom pb-2">Năng lực làm việc (<?php echo $user['role_name']; ?>)</h6>
                                     <div class="row g-3 mb-3">
-                                        <div class="col-md-6"><label>Môn dạy chính</label><input type="text" name="main_subject" class="form-control" value="<?php echo $teaching['main_subject'] ?? ''; ?>"></div>
-                                        <div class="col-md-6"><label>Band điểm dạy</label><input type="text" name="teaching_band" class="form-control" value="<?php echo $teaching['teaching_band'] ?? ''; ?>"></div>
-                                        <div class="col-12"><label>Link Video Demo</label><input type="text" name="demo_video_link" class="form-control" value="<?php echo $teaching['demo_video_link'] ?? ''; ?>"></div>
+                                        <?php if ($user['role_id'] == 4): // ROLE GIÁO VIÊN ?>
+                                            <div class="col-md-6">
+                                                <label class="fw-bold small">Môn dạy chính</label>
+                                                <input type="text" name="main_subject" class="form-control" value="<?php echo $teaching['main_subject'] ?? ''; ?>" placeholder="VD: IELTS Speaking">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="fw-bold small">Band điểm dạy</label>
+                                                <input type="text" name="teaching_band" class="form-control" value="<?php echo $teaching['teaching_band'] ?? ''; ?>" placeholder="VD: 7.0+">
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="fw-bold small">Link Video Demo</label>
+                                                <input type="text" name="demo_video_link" class="form-control" value="<?php echo $teaching['demo_video_link'] ?? ''; ?>" placeholder="Link Youtube/Drive...">
+                                            </div>
+
+                                        <?php elseif ($user['role_id'] == 5): // ROLE TUYỂN SINH (SALES) ?>
+                                            <div class="col-md-6">
+                                                <label class="fw-bold small">KPI Doanh số / Tháng (Mục tiêu)</label>
+                                                <input type="number" name="sales_target" class="form-control" value="<?php echo $teaching['sales_target'] ?? 0; ?>">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="fw-bold small">Kỹ năng Sales</label>
+                                                <input type="text" name="skills" class="form-control" value="<?php echo $teaching['skills'] ?? ''; ?>" placeholder="VD: Telesale, CSKH, Chốt đơn...">
+                                            </div>
+
+                                        <?php else: // CÁC ROLE KHÁC (Marketing, Kế toán, HR...) ?>
+                                            <div class="col-md-6">
+                                                <label class="fw-bold small">Link Portfolio / Dự án</label>
+                                                <input type="text" name="portfolio_link" class="form-control" value="<?php echo $teaching['portfolio_link'] ?? ''; ?>" placeholder="Link Behance/Git/Excel...">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="fw-bold small">Kỹ năng / Phần mềm thành thạo</label>
+                                                <input type="text" name="skills" class="form-control" value="<?php echo $teaching['skills'] ?? ''; ?>" placeholder="VD: Photoshop, Excel Misa, Premier...">
+                                            </div>
+                                        <?php endif; ?>
                                     </div>
-                                    
+
                                     <h6 class="text-primary border-bottom pb-2">Bằng cấp & Chứng chỉ</h6>
                                     <div class="row g-3 bg-light p-3 rounded border mx-0">
-                                        <div class="col-md-3"><label class="fw-bold">Trình độ</label><select name="education_level" class="form-select"><option value="Đại học">Đại học</option><option value="Thạc sĩ">Thạc sĩ</option></select></div>
-                                        <div class="col-md-3"><label>Chuyên ngành</label><input type="text" name="major" class="form-control" value="<?php echo $detail['major'] ?? ''; ?>"></div>
-                                        
                                         <div class="col-md-3">
-                                            <label class="fw-bold">Chứng chỉ</label>
+                                            <label class="fw-bold small">Trình độ</label>
+                                            <select name="education_level" class="form-select">
+                                                <option value="Trung cấp" <?php echo (($detail['education_level'] ?? '') == 'Trung cấp') ? 'selected' : ''; ?>>Trung cấp</option>
+                                                <option value="Cao đẳng" <?php echo (($detail['education_level'] ?? '') == 'Cao đẳng') ? 'selected' : ''; ?>>Cao đẳng</option>
+                                                <option value="Đại học" <?php echo (($detail['education_level'] ?? '') == 'Đại học') ? 'selected' : ''; ?>>Đại học</option>
+                                                <option value="Thạc sĩ" <?php echo (($detail['education_level'] ?? '') == 'Thạc sĩ') ? 'selected' : ''; ?>>Thạc sĩ</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="fw-bold small">Chuyên ngành</label>
+                                            <input type="text" name="major" class="form-control" value="<?php echo $detail['major'] ?? ''; ?>">
+                                        </div>
+
+                                        <div class="col-md-3">
+                                            <label class="fw-bold small">Chứng chỉ Ngoại ngữ</label>
                                             <select name="certificate_type" class="form-select">
                                                 <option value="None" <?php echo ($curr_cert == 'None') ? 'selected' : ''; ?>>Không</option>
                                                 <option value="IELTS" <?php echo ($curr_cert == 'IELTS') ? 'selected' : ''; ?>>IELTS</option>
                                                 <option value="TOEIC" <?php echo ($curr_cert == 'TOEIC') ? 'selected' : ''; ?>>TOEIC</option>
+                                                <option value="JLPT" <?php echo ($curr_cert == 'JLPT') ? 'selected' : ''; ?>>Tiếng Nhật (JLPT)</option>
                                             </select>
                                         </div>
 
-                                        <div class="col-md-3"><label>Điểm số</label><input type="number" step="0.5" name="certificate_score" class="form-control" value="<?php echo $detail['certificate_score'] ?? ''; ?>"></div>
+                                        <div class="col-md-3">
+                                            <label class="fw-bold small">Điểm số / Bậc</label>
+                                            <input type="text" name="certificate_score" class="form-control" value="<?php echo $detail['certificate_score'] ?? ''; ?>" placeholder="VD: 7.5 hoặc N3">
+                                        </div>
                                     </div>
-                                    <div class="mt-3 text-end"><button type="submit" name="save_tab2" class="btn btn-primary">Lưu Chuyên Môn</button></div>
+                                    <div class="mt-3 text-end">
+                                        <button type="submit" name="save_tab2" class="btn btn-primary"><i class="fas fa-save"></i> Lưu Chuyên Môn</button>
+                                    </div>
                                 </form>
                             </div>
 
                             <div class="tab-pane fade" id="tab3">
                                 <h6 class="text-primary">Danh sách giấy tờ</h6>
                                 <table class="table table-bordered table-sm">
-                                    <thead class="table-light"><tr><th>Loại</th><th>Số</th><th>Hết hạn</th><th>File</th></tr></thead>
-                                    <tbody>
-                                        <?php while($doc = $legal_docs->fetch_assoc()): ?>
+                                    <thead class="table-light">
                                         <tr>
-                                            <td><?php echo $doc['doc_type']; ?></td>
-                                            <td><?php echo $doc['doc_number']; ?></td>
-                                            <td class="<?php echo ($doc['expiry_date'] < date('Y-m-d')) ? 'text-danger' : ''; ?>"><?php echo $doc['expiry_date']; ?></td>
-                                            <td><?php if($doc['doc_file_front']): ?><a href="<?php echo $doc['doc_file_front']; ?>" target="_blank">Xem</a><?php endif; ?></td>
+                                            <th>Loại</th>
+                                            <th>Số</th>
+                                            <th>Hết hạn</th>
+                                            <th>File</th>
                                         </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php while ($doc = $legal_docs->fetch_assoc()): ?>
+                                            <tr>
+                                                <td><?php echo $doc['doc_type']; ?></td>
+                                                <td><?php echo $doc['doc_number']; ?></td>
+                                                <td
+                                                    class="<?php echo ($doc['expiry_date'] < date('Y-m-d')) ? 'text-danger' : ''; ?>">
+                                                    <?php echo $doc['expiry_date']; ?></td>
+                                                <td><?php if ($doc['doc_file_front']): ?><a
+                                                            href="<?php echo $doc['doc_file_front']; ?>"
+                                                            target="_blank">Xem</a><?php endif; ?></td>
+                                            </tr>
                                         <?php endwhile; ?>
                                     </tbody>
                                 </table>
@@ -390,16 +549,27 @@ $curr_cert = $detail['certificate_type'] ?? 'None';
                                 <h6>Thêm mới</h6>
                                 <form method="POST" enctype="multipart/form-data" class="bg-light p-3 border rounded">
                                     <div class="row g-2">
-                                        <div class="col-md-3"><label class="small fw-bold">Loại</label><select name="doc_type" class="form-select"><option>CCCD</option><option>Visa</option></select></div>
-                                        <div class="col-md-3"><label class="small fw-bold">Số giấy tờ</label><input type="text" name="doc_number" class="form-control" required></div>
-                                        <div class="col-md-3"><label class="small fw-bold">Ngày cấp</label><input type="date" name="issue_date" class="form-control"></div>
-                                        <div class="col-md-3"><label class="small fw-bold">Hết hạn</label><input type="date" name="expiry_date" class="form-control"></div>
-                                        
-                                        <div class="col-md-6"><label class="small fw-bold">Nơi cấp</label><input type="text" name="place_of_issue" class="form-control"></div>
-                                        <div class="col-md-3"><label class="small fw-bold">Mặt trước</label><input type="file" name="file_front" class="form-control"></div>
-                                        <div class="col-md-3"><label class="small fw-bold">Mặt sau</label><input type="file" name="file_back" class="form-control"></div>
-                                        
-                                        <div class="col-12 text-end mt-2"><button type="submit" name="add_doc" class="btn btn-success btn-sm">Thêm Giấy Tờ</button></div>
+                                        <div class="col-md-3"><label class="small fw-bold">Loại</label><select
+                                                name="doc_type" class="form-select">
+                                                <option>CCCD</option>
+                                                <option>Visa</option>
+                                            </select></div>
+                                        <div class="col-md-3"><label class="small fw-bold">Số giấy tờ</label><input
+                                                type="text" name="doc_number" class="form-control" required></div>
+                                        <div class="col-md-3"><label class="small fw-bold">Ngày cấp</label><input
+                                                type="date" name="issue_date" class="form-control"></div>
+                                        <div class="col-md-3"><label class="small fw-bold">Hết hạn</label><input
+                                                type="date" name="expiry_date" class="form-control"></div>
+
+                                        <div class="col-md-6"><label class="small fw-bold">Nơi cấp</label><input
+                                                type="text" name="place_of_issue" class="form-control"></div>
+                                        <div class="col-md-3"><label class="small fw-bold">Mặt trước</label><input
+                                                type="file" name="file_front" class="form-control"></div>
+                                        <div class="col-md-3"><label class="small fw-bold">Mặt sau</label><input
+                                                type="file" name="file_back" class="form-control"></div>
+
+                                        <div class="col-12 text-end mt-2"><button type="submit" name="add_doc"
+                                                class="btn btn-success btn-sm">Thêm Giấy Tờ</button></div>
                                     </div>
                                 </form>
                             </div>
@@ -407,40 +577,113 @@ $curr_cert = $detail['certificate_type'] ?? 'None';
                             <div class="tab-pane fade" id="tab4">
                                 <h6 class="text-primary">Danh sách Hợp đồng</h6>
                                 <table class="table table-bordered table-sm">
-                                    <thead class="table-light"><tr><th>Số HĐ</th><th>Loại</th><th>Thời hạn</th><th>Lương cứng</th><th>Ngân hàng</th><th>File</th></tr></thead>
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Số HĐ</th>
+                                            <th>Loại</th>
+                                            <th>Thời hạn</th>
+                                            <th>Lương cứng</th>
+                                            <th>Ngân hàng</th>
+                                            <th>File</th>
+                                            <th class="text-center">Hành động</th>
+                                        </tr>
+                                    </thead>
                                     <tbody>
-                                        <?php while($ct = $contracts->fetch_assoc()): 
+                                        <?php
+                                        // Reset lại con trỏ dữ liệu nếu cần thiết
+                                        $contracts->data_seek(0);
+                                        while ($ct = $contracts->fetch_assoc()):
                                             $is_active = ($ct['end_date'] >= date('Y-m-d'));
                                             $row_class = $is_active ? 'table-success' : 'text-muted';
-                                        ?>
-                                        <tr class="<?php echo $row_class; ?>">
-                                            <td><?php echo $ct['contract_number']; ?> <?php if($is_active) echo '<i class="fas fa-check-circle text-success small"></i>'; ?></td>
-                                            <td><?php echo $ct['contract_type']; ?></td>
-                                            <td><?php echo date('d/m/Y', strtotime($ct['start_date'])) . ' -> ' . date('d/m/Y', strtotime($ct['end_date'])); ?></td>
-                                            <td class="fw-bold"><?php echo number_format($ct['base_salary']); ?></td>
-                                            <td><?php echo $ct['bank_name'] . ' - ' . $ct['bank_number']; ?></td>
-                                            <td><?php if($ct['contract_file']): ?><a href="<?php echo $ct['contract_file']; ?>" target="_blank">PDF</a><?php endif; ?></td>
-                                        </tr>
+                                            ?>
+                                            <tr class="<?php echo $row_class; ?>">
+                                                <td><?php echo $ct['contract_number']; ?>
+                                                    <?php if ($is_active)
+                                                        echo '<i class="fas fa-check-circle text-success small"></i>'; ?>
+                                                </td>
+                                                <td><?php echo $ct['contract_type']; ?></td>
+                                                <td><?php echo date('d/m/Y', strtotime($ct['start_date'])) . ' -> ' . date('d/m/Y', strtotime($ct['end_date'])); ?>
+                                                </td>
+                                                <td class="fw-bold"><?php echo number_format($ct['base_salary']); ?></td>
+                                                <td><?php echo $ct['bank_name'] . ' - ' . $ct['bank_number']; ?></td>
+                                                <td><?php if ($ct['contract_file']): ?><a
+                                                            href="<?php echo $ct['contract_file']; ?>"
+                                                            target="_blank">PDF</a><?php endif; ?></td>
+                                                <td class="text-center">
+                                                    <a href="admin_employee_detail.php?id=<?php echo $user_id; ?>&delete_contract_id=<?php echo $ct['id']; ?>"
+                                                        class="text-danger"
+                                                        onclick="return confirm('Bạn có chắc chắn muốn xóa hợp đồng số <?php echo $ct['contract_number']; ?> không?')">
+                                                        <i class="fas fa-trash-alt"></i>
+                                                    </a>
+                                                </td>
+                                            </tr>
                                         <?php endwhile; ?>
                                     </tbody>
                                 </table>
-                                <hr>
-                                <h6>Thêm Hợp đồng mới</h6>
-                                <form method="POST" enctype="multipart/form-data" class="row g-2 bg-light p-2 border rounded">
-                                    <div class="col-md-3"><input type="text" name="contract_number" class="form-control" placeholder="Số HĐ" required></div>
-                                    <div class="col-md-3"><select name="contract_type" class="form-select"><option>Thử việc</option><option>Chính thức</option></select></div>
-                                    <div class="col-md-3"><input type="date" name="start_date" class="form-control" title="Bắt đầu" required></div>
-                                    <div class="col-md-3"><input type="date" name="end_date" class="form-control" title="Kết thúc" required></div>
-                                    
-                                    <div class="col-md-3"><input type="number" name="base_salary" class="form-control" placeholder="Lương cứng" required></div>
-                                    <div class="col-md-3"><input type="number" name="hourly_rate" class="form-control" placeholder="Lương giờ"></div>
-                                    
-                                    <div class="col-md-6"><input type="text" name="bank_name" class="form-control" placeholder="Tên Ngân hàng"></div>
-                                    <div class="col-md-6"><input type="text" name="bank_number" class="form-control" placeholder="Số tài khoản"></div>
-                                    <div class="col-md-6"><input type="text" name="tax_code" class="form-control" placeholder="Mã số thuế"></div>
 
-                                    <div class="col-md-12"><input type="file" name="contract_file" class="form-control"></div>
-                                    <div class="col-12 text-end"><button type="submit" name="add_contract" class="btn btn-success btn-sm">Lưu Hợp Đồng</button></div>
+                                <hr>
+
+                                <h6 class="text-primary"><i class="fas fa-plus-circle"></i> Thêm Hợp đồng mới</h6>
+                                <form method="POST" enctype="multipart/form-data"
+                                    class="row g-2 bg-light p-3 border rounded shadow-sm">
+                                    <div class="col-md-3">
+                                        <label class="small fw-bold">Số HĐ</label>
+                                        <input type="text" name="contract_number" class="form-control"
+                                            placeholder="Số HĐ" required>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="small fw-bold">Loại hợp đồng</label>
+                                        <select name="contract_type" class="form-select">
+                                            <option>Thử việc</option>
+                                            <option>Chính thức</option>
+                                            <option>Cộng tác viên</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="small fw-bold">Ngày bắt đầu</label>
+                                        <input type="date" name="start_date" class="form-control" required>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="small fw-bold">Ngày kết thúc</label>
+                                        <input type="date" name="end_date" class="form-control" required>
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <label class="small fw-bold">Lương cứng</label>
+                                        <input type="number" name="base_salary" class="form-control"
+                                            placeholder="VD: 10000000" required>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="small fw-bold">Lương theo giờ (nếu có)</label>
+                                        <input type="number" name="hourly_rate" class="form-control"
+                                            placeholder="Lương giờ">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="small fw-bold">Tên Ngân hàng</label>
+                                        <input type="text" name="bank_name" class="form-control"
+                                            placeholder="VD: Vietcombank">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="small fw-bold">Số tài khoản</label>
+                                        <input type="text" name="bank_number" class="form-control"
+                                            placeholder="Số tài khoản">
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="small fw-bold">Mã số thuế</label>
+                                        <input type="text" name="tax_code" class="form-control"
+                                            placeholder="Mã số thuế cá nhân">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="small fw-bold">File đính kèm (PDF/Ảnh)</label>
+                                        <input type="file" name="contract_file" class="form-control">
+                                    </div>
+
+                                    <div class="col-12 text-end mt-3">
+                                        <button type="submit" name="add_contract" class="btn btn-success">
+                                            <i class="fas fa-save"></i> Lưu Hợp Đồng
+                                        </button>
+                                    </div>
                                 </form>
                             </div>
 
@@ -448,38 +691,77 @@ $curr_cert = $detail['certificate_type'] ?? 'None';
                                 <form method="POST">
                                     <h6 class="text-primary">Bảo hiểm Xã hội</h6>
                                     <div class="row g-3 mb-3">
-                                        <div class="col-md-4"><label>Trạng thái</label><select name="social_status" class="form-select"><option value="Không đóng" <?php echo ($insurance['social_status']??'')=='Không đóng'?'selected':''; ?>>Không đóng</option><option value="Có đóng" <?php echo ($insurance['social_status']??'')=='Có đóng'?'selected':''; ?>>Có đóng</option></select></div>
-                                        <div class="col-md-4"><label>Số sổ BHXH</label><input type="text" name="social_book_number" class="form-control" value="<?php echo $insurance['social_book_number'] ?? ''; ?>"></div>
-                                        <div class="col-md-4"><label>Mã thẻ BHYT</label><input type="text" name="health_card_number" class="form-control" value="<?php echo $insurance['health_card_number'] ?? ''; ?>"></div>
-                                        <div class="col-md-6"><label>Nơi ĐK KCB</label><input type="text" name="hospital_reg" class="form-control" value="<?php echo $insurance['hospital_reg'] ?? ''; ?>"></div>
-                                        <div class="col-md-6"><label>Mức lương đóng BH</label><input type="number" name="social_salary_base" class="form-control" value="<?php echo $insurance['social_salary_base'] ?? 0; ?>"></div>
+                                        <div class="col-md-4"><label>Trạng thái</label><select name="social_status"
+                                                class="form-select">
+                                                <option value="Không đóng" <?php echo ($insurance['social_status'] ?? '') == 'Không đóng' ? 'selected' : ''; ?>>
+                                                    Không đóng</option>
+                                                <option value="Có đóng" <?php echo ($insurance['social_status'] ?? '') == 'Có đóng' ? 'selected' : ''; ?>>Có
+                                                    đóng</option>
+                                            </select></div>
+                                        <div class="col-md-4"><label>Số sổ BHXH</label><input type="text"
+                                                name="social_book_number" class="form-control"
+                                                value="<?php echo $insurance['social_book_number'] ?? ''; ?>"></div>
+                                        <div class="col-md-4"><label>Mã thẻ BHYT</label><input type="text"
+                                                name="health_card_number" class="form-control"
+                                                value="<?php echo $insurance['health_card_number'] ?? ''; ?>"></div>
+                                        <div class="col-md-6"><label>Nơi ĐK KCB</label><input type="text"
+                                                name="hospital_reg" class="form-control"
+                                                value="<?php echo $insurance['hospital_reg'] ?? ''; ?>"></div>
+                                        <div class="col-md-6"><label>Mức lương đóng BH</label><input type="number"
+                                                name="social_salary_base" class="form-control"
+                                                value="<?php echo $insurance['social_salary_base'] ?? 0; ?>"></div>
                                     </div>
                                     <h6 class="text-primary">Bảo hiểm Thương mại</h6>
                                     <div class="row g-3">
-                                        <div class="col-md-4"><label>Tên gói</label><input type="text" name="commercial_pkg_name" class="form-control" value="<?php echo $insurance['commercial_pkg_name'] ?? ''; ?>"></div>
-                                        <div class="col-md-4"><label>Số HĐ Bảo hiểm</label><input type="text" name="commercial_contract_num" class="form-control" value="<?php echo $insurance['commercial_contract_num'] ?? ''; ?>"></div>
-                                        <div class="col-md-4"><label>Ngày hết hạn</label><input type="date" name="commercial_expiry" class="form-control" value="<?php echo $insurance['commercial_expiry'] ?? ''; ?>"></div>
+                                        <div class="col-md-4"><label>Tên gói</label><input type="text"
+                                                name="commercial_pkg_name" class="form-control"
+                                                value="<?php echo $insurance['commercial_pkg_name'] ?? ''; ?>"></div>
+                                        <div class="col-md-4"><label>Số HĐ Bảo hiểm</label><input type="text"
+                                                name="commercial_contract_num" class="form-control"
+                                                value="<?php echo $insurance['commercial_contract_num'] ?? ''; ?>">
+                                        </div>
+                                        <div class="col-md-4"><label>Ngày hết hạn</label><input type="date"
+                                                name="commercial_expiry" class="form-control"
+                                                value="<?php echo $insurance['commercial_expiry'] ?? ''; ?>"></div>
                                     </div>
-                                    <div class="mt-3 text-end"><button type="submit" name="save_tab5" class="btn btn-primary">Lưu Bảo Hiểm</button></div>
+                                    <div class="mt-3 text-end"><button type="submit" name="save_tab5"
+                                            class="btn btn-primary">Lưu Bảo Hiểm</button></div>
                                 </form>
                             </div>
 
                             <div class="tab-pane fade" id="tab6">
                                 <table class="table table-striped table-sm">
-                                    <thead><tr><th>Họ tên</th><th>Quan hệ</th><th>SĐT</th><th>Địa chỉ</th></tr></thead>
+                                    <thead>
+                                        <tr>
+                                            <th>Họ tên</th>
+                                            <th>Quan hệ</th>
+                                            <th>SĐT</th>
+                                            <th>Địa chỉ</th>
+                                        </tr>
+                                    </thead>
                                     <tbody>
-                                        <?php while($ct = $contacts->fetch_assoc()): ?>
-                                        <tr><td><?php echo $ct['name']; ?></td><td><?php echo $ct['relationship']; ?></td><td><?php echo $ct['phone']; ?></td><td><?php echo $ct['address']; ?></td></tr>
+                                        <?php while ($ct = $contacts->fetch_assoc()): ?>
+                                            <tr>
+                                                <td><?php echo $ct['name']; ?></td>
+                                                <td><?php echo $ct['relationship']; ?></td>
+                                                <td><?php echo $ct['phone']; ?></td>
+                                                <td><?php echo $ct['address']; ?></td>
+                                            </tr>
                                         <?php endwhile; ?>
                                     </tbody>
                                 </table>
                                 <hr>
                                 <form method="POST" class="row g-2">
-                                    <div class="col-md-4"><input type="text" name="contact_name" class="form-control" placeholder="Họ tên" required></div>
-                                    <div class="col-md-2"><input type="text" name="relationship" class="form-control" placeholder="Quan hệ" required></div>
-                                    <div class="col-md-3"><input type="text" name="contact_phone" class="form-control" placeholder="SĐT" required></div>
-                                    <div class="col-md-3"><input type="text" name="contact_address" class="form-control" placeholder="Địa chỉ"></div>
-                                    <div class="col-12 mt-2 text-end"><button type="submit" name="add_contact" class="btn btn-success">Thêm Liên Hệ</button></div>
+                                    <div class="col-md-4"><input type="text" name="contact_name" class="form-control"
+                                            placeholder="Họ tên" required></div>
+                                    <div class="col-md-2"><input type="text" name="relationship" class="form-control"
+                                            placeholder="Quan hệ" required></div>
+                                    <div class="col-md-3"><input type="text" name="contact_phone" class="form-control"
+                                            placeholder="SĐT" required></div>
+                                    <div class="col-md-3"><input type="text" name="contact_address" class="form-control"
+                                            placeholder="Địa chỉ"></div>
+                                    <div class="col-12 mt-2 text-end"><button type="submit" name="add_contact"
+                                            class="btn btn-success">Thêm Liên Hệ</button></div>
                                 </form>
                             </div>
 
@@ -491,4 +773,5 @@ $curr_cert = $detail['certificate_type'] ?? 'None';
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>

@@ -45,7 +45,7 @@ $news_chunks = array_chunk($news_items, 2);
         </header>
         <ul class="chatbox">
             <li class="chat incoming">
-                <span class="material-symbols-outlined"><i class="fas fa-robot"></i></span>
+                <span class="material-symbols-outlinphed"><i class="fas fa-robot"></i></span>
                 <p>Xin chào 👋<br>Tôi là trợ lý ảo của trung tâm. Bạn cần hỗ trợ gì không?</p>
             </li>
         </ul>
@@ -235,7 +235,7 @@ $news_chunks = array_chunk($news_items, 2);
     <div class="dept-grid">
         <?php 
         // Hiển thị tối đa 4 phòng ban
-        $limit = 4;
+        $limit = 3;
         $count = 0;
         
         foreach($all_departments as $dept): 

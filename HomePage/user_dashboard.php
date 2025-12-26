@@ -45,6 +45,19 @@ $is_sales = hasPermission('lead.manage');
         .card { transition: transform 0.2s; border: none; }
         .card:hover { transform: translateY(-3px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; }
         .icon-box { font-size: 2rem; margin-bottom: 10px; }
+        <style>
+    .card { 
+        height: 100%; /* Đảm bảo card luôn lấp đầy cột */
+        display: flex;
+        flex-direction: column;
+    }
+    .card-body {
+        flex: 1 1 auto; /* Giúp nội dung bên trong tự cân đối */
+        display: flex;
+        flex-direction: column;
+        justify-content: center; /* Căn giữa nội dung theo chiều dọc */
+    }
+</style>
     </style>
 </head>
 <body class="bg-light">
@@ -156,13 +169,49 @@ $is_sales = hasPermission('lead.manage');
                 </div>
 
                 <div class="row g-3">
-                    <?php if (hasPermission('leave.create')): ?><div class="col-md-4 col-sm-6"><div class="card h-100 shadow-sm text-center"><div class="card-body"><i class="fas fa-calendar-plus fa-2x text-primary mb-3"></i><h6 class="card-title">Xin nghỉ phép</h6><a href="user_leaves.php" class="btn btn-sm btn-outline-primary w-100 stretched-link">Tạo đơn</a></div></div></div><?php endif; ?>
-                    <?php if (hasPermission('attendance.check')): ?><div class="col-md-4 col-sm-6"><div class="card h-100 shadow-sm text-center"><div class="card-body"><i class="fas fa-fingerprint fa-2x text-success mb-3"></i><h6 class="card-title">Chấm công</h6><a href="user_attendance.php" class="btn btn-sm btn-outline-success w-100 stretched-link">Check-in</a></div></div></div><?php endif; ?>
-                    <?php if (hasPermission('salary.read_personal')): ?><div class="col-md-4 col-sm-6"><div class="card h-100 shadow-sm text-center"><div class="card-body"><i class="fas fa-file-invoice-dollar fa-2x text-warning mb-3"></i><h6 class="card-title">Bảng lương</h6><a href="user_payroll.php" class="btn btn-sm btn-outline-warning w-100 stretched-link text-dark">Xem chi tiết</a></div></div></div><?php endif; ?>
-                </div>
-
+    <?php if (hasPermission('leave.create')): ?>
+    <div class="col-md-4 col-sm-6">
+        <div class="card h-100 shadow-sm text-center">
+            <div class="card-body">
+                <i class="fas fa-calendar-plus fa-2x text-primary mb-3"></i>
+                <h6 class="card-title fw-bold">Xin nghỉ phép</h6>
+                <a href="user_leaves.php" class="btn btn-sm btn-outline-primary w-100 stretched-link">Tạo đơn</a>
             </div>
         </div>
     </div>
-</body>
-</html>
+    <?php endif; ?>
+
+    <?php if (hasPermission('attendance.check')): ?>
+    <div class="col-md-4 col-sm-6">
+        <div class="card h-100 shadow-sm text-center">
+            <div class="card-body">
+                <i class="fas fa-fingerprint fa-2x text-success mb-3"></i>
+                <h6 class="card-title fw-bold">Chấm công</h6>
+                <a href="user_attendance.php" class="btn btn-sm btn-outline-success w-100 stretched-link">Check-in</a>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <?php if (hasPermission('salary.read_personal')): ?>
+    <div class="col-md-4 col-sm-6">
+        <div class="card h-100 shadow-sm text-center">
+            <div class="card-body">
+                <i class="fas fa-file-invoice-dollar fa-2x text-warning mb-3"></i>
+                <h6 class="card-title fw-bold">Bảng lương</h6>
+                <a href="user_payroll.php" class="btn btn-sm btn-outline-warning w-100 stretched-link text-dark">Xem chi tiết</a>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <div class="col-md-4 col-sm-6">
+        <div class="card h-100 shadow-sm text-center border-0 bg-white">
+            <div class="card-body">
+                <i class="fas fa-home fa-2x text-secondary mb-3"></i>
+                <h6 class="card-title fw-bold">Trang chủ</h6>
+                <a href="index.php" class="btn btn-sm btn-outline-secondary w-100 stretched-link">Quay về</a>
+            </div>
+        </div>
+    </div>
+</div>

@@ -24,7 +24,7 @@ if (isset($_SESSION['user_id'])) {
         <div class="left-panel">
             <div class="left-content">
                 <h1>Chào mừng trở lại!</h1>
-                <p>Kết nối với hệ thống quản trị nhân sự chuyên nghiệp của DDMQ.vn.</p>
+                <p>Kết nối với hệ thống quản trị nhân sự chuyên nghiệp của IELTS School </p>
                 <a href="index.php" class="view-more-btn"><i class="fas fa-arrow-left"></i> Về Trang Chủ</a>
             </div>
         </div>
